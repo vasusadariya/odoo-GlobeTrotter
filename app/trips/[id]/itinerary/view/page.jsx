@@ -1026,13 +1026,13 @@ export default function ItineraryViewPage() {
       {/* Optimize Trip Modal */}
       {showOptimizeModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent hover:scrollbar-thumb-gray-400">
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600 text-white p-6 rounded-t-2xl">
+            <div className="bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600 text-white p-4 rounded-t-2xl">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -1042,12 +1042,12 @@ export default function ItineraryViewPage() {
                     </svg>
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold">AI Trip Optimizer</h2>
-                    <p className="text-purple-100 text-sm">Enhance your itinerary with AI</p>
+                    <h2 className="text-lg font-bold">AI Trip Optimizer</h2>
+                    <p className="text-purple-100 text-xs">Enhance your itinerary with AI</p>
                   </div>
                 </div>
                 <button onClick={closeOptimizeModal} className="text-white hover:text-gray-200 transition-colors">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
@@ -1055,11 +1055,11 @@ export default function ItineraryViewPage() {
             </div>
 
             {/* Modal Content */}
-            <div className="p-6">
+            <div className="p-4">
               <div className="space-y-4">
-                <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-4 border border-purple-200">
-                  <h3 className="font-semibold text-gray-900 mb-2">✨ AI Optimization Features</h3>
-                  <ul className="text-sm text-gray-600 space-y-1">
+                <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-3 border border-purple-200">
+                  <h3 className="font-semibold text-gray-900 mb-2 text-sm">✨ AI Optimization Features</h3>
+                  <ul className="text-xs text-gray-600 space-y-1">
                     <li>• Optimize travel routes and timing</li>
                     <li>• Suggest better activity sequences</li>
                     <li>• Budget optimization recommendations</li>
@@ -1072,27 +1072,27 @@ export default function ItineraryViewPage() {
                     What would you like to optimize?
                   </label>
                   <textarea
-                    className="w-full border border-gray-300 rounded-lg p-3 text-sm"
+                    className="w-full border border-gray-300 rounded-lg p-3 text-sm resize-none"
                     rows={3}
                     placeholder="E.g., 'Minimize travel time between activities', 'Optimize for budget savings', 'Adjust for rainy weather'..."
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-white border border-gray-200 rounded-lg p-3 text-center hover:bg-gray-50 cursor-pointer transition-colors">
-                    <div className="text-2xl mb-1">⏱️</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-white border border-gray-200 rounded-lg p-2 text-center hover:bg-gray-50 cursor-pointer transition-colors">
+                    <div className="text-lg mb-1">⏱️</div>
                     <div className="text-xs font-medium text-gray-700">Time</div>
                   </div>
-                  <div className="bg-white border border-gray-200 rounded-lg p-3 text-center hover:bg-gray-50 cursor-pointer transition-colors">
-                    <div className="text-2xl mb-1">💰</div>
+                  <div className="bg-white border border-gray-200 rounded-lg p-2 text-center hover:bg-gray-50 cursor-pointer transition-colors">
+                    <div className="text-lg mb-1">💰</div>
                     <div className="text-xs font-medium text-gray-700">Budget</div>
                   </div>
-                  <div className="bg-white border border-gray-200 rounded-lg p-3 text-center hover:bg-gray-50 cursor-pointer transition-colors">
-                    <div className="text-2xl mb-1">🗺️</div>
+                  <div className="bg-white border border-gray-200 rounded-lg p-2 text-center hover:bg-gray-50 cursor-pointer transition-colors">
+                    <div className="text-lg mb-1">🗺️</div>
                     <div className="text-xs font-medium text-gray-700">Route</div>
                   </div>
-                  <div className="bg-white border border-gray-200 rounded-lg p-3 text-center hover:bg-gray-50 cursor-pointer transition-colors">
-                    <div className="text-2xl mb-1">🌤️</div>
+                  <div className="bg-white border border-gray-200 rounded-lg p-2 text-center hover:bg-gray-50 cursor-pointer transition-colors">
+                    <div className="text-lg mb-1">🌤️</div>
                     <div className="text-xs font-medium text-gray-700">Weather</div>
                   </div>
                 </div>
@@ -1100,10 +1100,10 @@ export default function ItineraryViewPage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3 rounded-b-2xl">
+            <div className="bg-gray-50 px-4 py-3 flex justify-end space-x-3 rounded-b-2xl">
               <button
                 onClick={closeOptimizeModal}
-                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-3 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm"
               >
                 Cancel
               </button>
