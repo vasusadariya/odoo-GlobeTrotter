@@ -31,8 +31,10 @@ export async function GET(request, { params }) {
     }
 
     // Check if user has permission to view this trip
-    const isOwner = trip.owner._id.toString() === session.user.id
-    const isCollaborator = trip.travelers.some((traveler) => traveler.user._id.toString() === session.user.id)
+    const isOwner = trip.owner && trip.owner._id ? trip.owner._id.toString() === session.user.id : false;
+    const isCollaborator = trip.travelers.some((traveler) => 
+      traveler.user && traveler.user._id && traveler.user._id.toString() === session.user.id
+    );
     const isPublic = trip.privacy === "public"
 
     if (!isOwner && !isCollaborator && !isPublic) {
@@ -103,10 +105,11 @@ export async function PUT(request, { params }) {
     }
 
     // Check if user has permission to edit this trip
-    const isOwner = trip.owner.toString() === session.user.id
+    const isOwner = trip.owner && trip.owner.toString() === session.user.id
     const isCollaborator = trip.travelers.some(
       (traveler) =>
-        traveler.user.toString() === session.user.id && (traveler.role === "owner" || traveler.role === "collaborator"),
+        traveler.user && traveler.user.toString() === session.user.id && 
+        (traveler.role === "owner" || traveler.role === "collaborator"),
     )
 
     if (!isOwner && !isCollaborator) {
@@ -167,7 +170,7 @@ export async function DELETE(request, { params }) {
     }
 
     // Check if user is the owner
-    const isOwner = trip.owner.toString() === session.user.id
+    const isOwner = trip.owner && trip.owner.toString() === session.user.id
 
     if (!isOwner) {
       return NextResponse.json({ error: "Only the trip owner can delete this trip" }, { status: 403 })

@@ -19,6 +19,10 @@ export default function ItineraryBuilderPage() {
   const [error, setError] = useState("")
   const [suggestedActivities, setSuggestedActivities] = useState([])
   const [loadingActivities, setLoadingActivities] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [searchResults, setSearchResults] = useState([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [showDropdown, setShowDropdown] = useState(false)
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -429,15 +433,88 @@ export default function ItineraryBuilderPage() {
                     </div>
 
                     {/* Location */}
-                    <div className="md:col-span-2">
-                      <Input
-                        label="Location"
-                        type="text"
-                        value={section.location}
-                        onChange={(e) => updateSection(section.id, "location", e.target.value)}
-                        placeholder="Enter specific location or address"
-                      />
-                    </div>
+            <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Search Destinations</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search for destinations, cities, or countries..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => searchResults.length > 0 && setShowDropdown(true)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                />
+                {isSearching && (
+                  <div className="absolute right-3 top-3">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600"></div>
+                  </div>
+                )}
+
+                {/* Search Results Dropdown */}
+                {showDropdown && searchResults.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                    {searchResults.map((place) => (
+                      <div
+                        key={place.id}
+                        onClick={() => selectPlace(place)}
+                        className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 flex-shrink-0">
+                            {place.photos && place.photos[0] && !imageErrors.has(place.id) ? (
+                              <img
+                                src={place.photos[0].url || "/placeholder.svg"}
+                                alt={place.name}
+                                width={40}
+                                height={40}
+                                className="w-10 h-10 object-cover rounded-lg"
+                                onError={() => handleImageError(place.id)}
+                                loading="lazy"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
+                                <svg
+                                  className="w-5 h-5 text-gray-400"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                                  />
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                                  />
+                                </svg>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-gray-900 truncate">{place.name}</h4>
+                            <p className="text-sm text-gray-600 truncate">{place.formatted_address}</p>
+                            {place.rating && (
+                              <div className="flex items-center mt-1">
+                                <span className="text-yellow-400">★</span>
+                                <span className="text-sm text-gray-600 ml-1">{place.rating}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Click outside to close dropdown */}
+              {showDropdown && <div className="fixed inset-0 z-5" onClick={() => setShowDropdown(false)}></div>}
+            </div>
 
                     {/* Additional Info for Activities */}
                     {section.duration && (

@@ -27,6 +27,7 @@ const UserSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
       match: [/^\S+@\S+$/i, "Invalid email address"],
+      index: true,
     },
     phone: {
       type: String,
@@ -34,6 +35,7 @@ const UserSchema = new mongoose.Schema(
       unique: true,
       trim: true,
       match: [/^[+]?[1-9][\d]{0,15}$/, "Invalid phone number"],
+      index: true,
     },
     // Keep phoneNumber for backward compatibility
     phoneNumber: {
@@ -68,6 +70,7 @@ const UserSchema = new mongoose.Schema(
     googleId: {
       type: String,
       sparse: true,
+      index: true,
     },
     image: {
       type: String,
@@ -104,10 +107,8 @@ const UserSchema = new mongoose.Schema(
   },
 )
 
-// Remove duplicate indexes - only use schema.index() method
-UserSchema.index({ email: 1 })
-UserSchema.index({ phone: 1 })
-UserSchema.index({ googleId: 1 })
+// Adding indexes directly in the schema definition instead of using UserSchema.index()
+// This avoids the duplicate schema index warnings
 
 // Pre-save middleware to sync phone fields and create name
 UserSchema.pre("save", async function (next) {
