@@ -129,7 +129,9 @@ export default function ItineraryBuilderPage() {
   }
 
   const updateSection = (sectionId, field, value) => {
-    setSections(sections.map((section) => (section.id === sectionId ? { ...section, [field]: value } : section)))
+    setSections((prevSections) =>
+      prevSections.map((section) => (section.id === sectionId ? { ...section, [field]: value } : section)),
+    )
   }
 
   const removeSection = (sectionId) => {
@@ -138,12 +140,46 @@ export default function ItineraryBuilderPage() {
     }
   }
 
-  const addActivityToSection = (sectionId, activity) => {
-    updateSection(sectionId, "title", activity.name)
-    updateSection(sectionId, "description", activity.description)
-    updateSection(sectionId, "budget", activity.estimatedCost || 0)
-    updateSection(sectionId, "location", activity.location)
-    updateSection(sectionId, "type", "activity")
+  const addActivityToSection = (activity) => {
+    // Create a new section with the activity details
+    const newSection = {
+      id: `section-${Date.now()}-${sections.length + 1}`,
+      title: activity.name,
+      description: activity.description,
+      type: "activity",
+      startDate: trip?.startDate || new Date().toISOString().split("T")[0],
+      endDate: trip?.endDate || new Date().toISOString().split("T")[0],
+      budget: activity.estimatedCost || 0,
+      location: activity.location,
+      coordinates: activity.coordinates || null,
+      duration: activity.duration,
+      category: activity.category,
+      rating: activity.rating,
+    }
+
+    setSections((prevSections) => [...prevSections, newSection])
+
+    // Show success feedback
+    alert(`Added "${activity.name}" to your itinerary!`)
+  }
+
+  const addActivityToExistingSection = (sectionId, activity) => {
+    setSections((prevSections) =>
+      prevSections.map((section) =>
+        section.id === sectionId
+          ? {
+              ...section,
+              title: activity.name,
+              description: activity.description,
+              budget: activity.estimatedCost || section.budget,
+              location: activity.location,
+              type: "activity",
+            }
+          : section,
+      ),
+    )
+
+    alert(`Updated section with "${activity.name}"!`)
   }
 
   const saveItinerary = async () => {
@@ -158,6 +194,8 @@ export default function ItineraryBuilderPage() {
         setError("Please add at least one valid section with title and dates")
         return
       }
+
+      console.log("Saving sections:", validSections)
 
       const response = await fetch(`/api/trips/${params.id}/itinerary`, {
         method: "POST",
@@ -179,9 +217,9 @@ export default function ItineraryBuilderPage() {
         throw new Error(responseData.error || "Failed to save itinerary")
       }
 
-      // Show success and redirect
+      // Show success and redirect to dashboard
       alert("Itinerary saved successfully!")
-      router.push(`/trips/${params.id}`)
+      router.push("/dashboard")
     } catch (error) {
       console.error("Save error:", error)
       setError(error.message)
@@ -400,6 +438,29 @@ export default function ItineraryBuilderPage() {
                         placeholder="Enter specific location or address"
                       />
                     </div>
+
+                    {/* Additional Info for Activities */}
+                    {section.duration && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Duration</label>
+                        <input
+                          type="text"
+                          value={section.duration}
+                          readOnly
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                        />
+                      </div>
+                    )}
+
+                    {section.rating && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Rating</label>
+                        <div className="flex items-center">
+                          <span className="text-yellow-400 mr-1">★</span>
+                          <span className="text-sm font-medium">{section.rating}/5</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -427,6 +488,11 @@ export default function ItineraryBuilderPage() {
               </Link>
 
               <div className="flex space-x-4">
+                <Link href={`/trips/${params.id}/itinerary/view`}>
+                  <Button variant="outline" disabled={sections.length === 0}>
+                    View Itinerary
+                  </Button>
+                </Link>
                 <Button
                   onClick={saveItinerary}
                   loading={isSaving}
@@ -455,30 +521,51 @@ export default function ItineraryBuilderPage() {
                     <div key={destIndex}>
                       <h4 className="font-medium text-gray-800 mb-2">{destActivities.destination}</h4>
                       <div className="space-y-2">
-                        {destActivities.activities.slice(0, 3).map((activity, actIndex) => (
+                        {destActivities.activities.slice(0, 5).map((activity, actIndex) => (
                           <div
                             key={actIndex}
-                            className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
+                            className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                           >
                             <div className="flex justify-between items-start">
                               <div className="flex-1">
-                                <h5 className="text-sm font-medium text-gray-900">{activity.name}</h5>
-                                <p className="text-xs text-gray-600 mt-1">{activity.description}</p>
-                                <div className="flex items-center justify-between mt-2">
-                                  <span className="text-xs text-green-600 font-medium">
-                                    {trip?.currency} {activity.estimatedCost || "Free"}
-                                  </span>
-                                  <button
-                                    onClick={() => {
-                                      if (sections.length > 0) {
-                                        addActivityToSection(sections[sections.length - 1].id, activity)
-                                      }
-                                    }}
-                                    className="text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded hover:bg-primary-200"
-                                  >
-                                    Add
-                                  </button>
+                                <h5 className="text-sm font-medium text-gray-900 mb-1">{activity.name}</h5>
+                                <p className="text-xs text-gray-600 mb-2 line-clamp-2">{activity.description}</p>
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-2">
+                                    <span className="text-xs text-green-600 font-medium">
+                                      {trip?.currency} {activity.estimatedCost || "Free"}
+                                    </span>
+                                    {activity.rating && (
+                                      <div className="flex items-center">
+                                        <span className="text-yellow-400 text-xs">★</span>
+                                        <span className="text-xs text-gray-600 ml-1">{activity.rating}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex space-x-1">
+                                    <button
+                                      onClick={() => addActivityToSection(activity)}
+                                      className="text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded hover:bg-primary-200 transition-colors"
+                                      title="Add as new section"
+                                    >
+                                      + New
+                                    </button>
+                                    {sections.length > 0 && (
+                                      <button
+                                        onClick={() =>
+                                          addActivityToExistingSection(sections[sections.length - 1].id, activity)
+                                        }
+                                        className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200 transition-colors"
+                                        title="Update last section"
+                                      >
+                                        Update
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
+                                {activity.duration && (
+                                  <p className="text-xs text-gray-500 mt-1">Duration: {activity.duration}</p>
+                                )}
                               </div>
                             </div>
                           </div>
