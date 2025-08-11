@@ -28,8 +28,9 @@ export default function CitySearchPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const tripId = searchParams.get("tripId")
+  const initialQuery = searchParams.get("q") || ""
 
-  const [searchQuery, setSearchQuery] = useState("")
+  const [searchQuery, setSearchQuery] = useState(initialQuery)
   const [searchResults, setSearchResults] = useState([])
   const [isSearching, setIsSearching] = useState(false)
   const [selectedCountry, setSelectedCountry] = useState("")
@@ -73,6 +74,13 @@ export default function CitySearchPage() {
   useEffect(() => {
     searchCities(debouncedSearchQuery)
   }, [debouncedSearchQuery, searchCities])
+
+  // Initial search if query parameter is present
+  useEffect(() => {
+    if (initialQuery && initialQuery.length >= 2) {
+      searchCities(initialQuery)
+    }
+  }, [initialQuery, searchCities])
 
   // Authentication check
   useEffect(() => {
@@ -139,11 +147,14 @@ export default function CitySearchPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
-              <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </Link>
+              <button 
+  onClick={() => router.back()}
+  className="text-gray-600 hover:text-gray-900"
+>
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+  </svg>
+</button>
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center">
                   <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -315,11 +326,6 @@ export default function CitySearchPage() {
                         </div>
                       </div>
                     </div>
-
-                    {/* Add to Trip Button */}
-                    <Button onClick={() => addCityToTrip(city)} className="w-full" size="sm" disabled={!tripId}>
-                      {tripId ? "Add to Trip" : "Select Trip First"}
-                    </Button>
                   </div>
                 ))}
               </div>
@@ -345,8 +351,8 @@ export default function CitySearchPage() {
           </div>
         )}
 
-        {/* Popular Destinations */}
-        {searchQuery.length < 2 && (
+        {/* Popular Destinations - Only show if no search query or initial load */}
+        {searchQuery.length < 2 && !initialQuery && (
           <div className="bg-white rounded-2xl shadow-lg p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-6">Popular Destinations</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -363,6 +369,10 @@ export default function CitySearchPage() {
                 <div
                   key={index}
                   className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => {
+                    setSearchQuery(destination.name);
+                    router.push(`/search/cities?q=${encodeURIComponent(destination.name)}`);
+                  }}
                 >
                   <div className="text-center">
                     <div className="text-4xl mb-2">{destination.image}</div>

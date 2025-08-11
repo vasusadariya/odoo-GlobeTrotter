@@ -139,32 +139,44 @@ export default function ItineraryBuilderPage() {
     }
   }
 
-  const searchPlaces = useCallback(async (query) => {
+  const searchPlaces = useCallback(async (query, sectionId) => {
     if (!query || query.length < 2) {
       setSearchResults([])
-      setActiveSearchSection(null)
       return
     }
 
+    console.log("Searching places:", { query, sectionId })
     setIsSearching(true)
     try {
+      // Using the correct query parameter 'q' as expected by the API
       const response = await fetch(`/api/places/search?q=${encodeURIComponent(query)}`)
       const data = await response.json()
+      console.log("Raw API response:", data)
+      
       if (response.ok) {
+        console.log("Search results:", data.places)
+        console.log("Number of results:", data.places?.length || 0)
         setSearchResults(data.places || [])
       } else {
+        console.error("Search error:", data)
         setSearchResults([])
       }
     } catch (err) {
+      console.error("Search error:", err)
       setSearchResults([])
     } finally {
       setIsSearching(false)
     }
   }, [])
 
+  // We're now handling search directly in the input handlers,
+  // so we can remove this effect that was using the debounced value
+  /* 
   useEffect(() => {
+    console.log("Debounced search query changed:", debouncedSearchQuery);
     searchPlaces(debouncedSearchQuery)
   }, [debouncedSearchQuery, searchPlaces])
+  */
 
   const searchGlobalPlaces = async (query) => {
     if (!query || query.length < 2) {
@@ -174,7 +186,7 @@ export default function ItineraryBuilderPage() {
 
     setIsGlobalSearching(true)
     try {
-      const response = await fetch(`/api/places/search?query=${encodeURIComponent(query)}`)
+      const response = await fetch(`/api/places/search?q=${encodeURIComponent(query)}`)
       if (response.ok) {
         const data = await response.json()
         setGlobalSearchResults(data.places || [])
@@ -238,42 +250,93 @@ export default function ItineraryBuilderPage() {
   }
 
   const selectPlace = (sectionId, place) => {
-    console.log("Selecting place:", { sectionId, place })
+    console.log("Selecting place:", { sectionId, place });
+    console.log("Place object keys:", Object.keys(place));
+    console.log("Place ID:", place.id, "Place place_id:", place.place_id);
 
+    // Simplify place data structure without photos
     const placeData = {
       name: place.name,
       place_id: place.place_id || place.id,
       formatted_address: place.formatted_address,
       rating: place.rating,
-      photos: place.photos ? place.photos.slice(0, 3) : [], // Store up to 3 photos
       geometry: place.geometry,
       types: place.types || [],
-      price_level: place.price_level,
-      opening_hours: place.opening_hours,
-      website: place.website,
-      phone: place.formatted_phone_number || place.international_phone_number,
-    }
+      price_level: place.price_level
+    };
 
-    updateSection(sectionId, "location", place.formatted_address || place.name)
-    updateSection(sectionId, "coordinates", place.geometry?.location || null)
-    updateSection(sectionId, "placeDetails", placeData) // Store complete place data
+    console.log("Simplified place data:", placeData);
 
-    // Keep the selected place visible in the input (like create page)
-    setSearchStates((prev) => ({ ...prev, [sectionId]: place.name }))
-    setSearchResults([])
-    setActiveSearchSection(null)
-    console.log("Updated section with complete place data:", placeData)
+    // Update the section state with the selected place
+    setSections(prevSections => {
+      const newSections = prevSections.map(section => {
+        if (section.id === sectionId) {
+          const updatedSection = {
+            ...section,
+            location: place.formatted_address || place.name,
+            coordinates: place.geometry?.location || null,
+            placeDetails: placeData
+          };
+          console.log("Updated section:", updatedSection);
+          return updatedSection;
+        }
+        return section;
+      });
+      
+      console.log("All sections after update:", newSections);
+      return newSections;
+    });
+
+    // Update the search input to show the selected place name
+    setSearchStates(prev => {
+      const newSearchStates = { ...prev, [sectionId]: place.name };
+      console.log("Updated search states:", newSearchStates);
+      return newSearchStates;
+    });
+    
+    // Clear search results and active section
+    setSearchResults([]);
+    setActiveSearchSection(null);
+    
+    
   }
 
   const handleSearchInputChange = (sectionId, value) => {
+    console.log("Search input changed:", { sectionId, value })
+    
+    // If user is typing and there was a previously selected location, clear it
+    const section = sections.find((s) => s.id === sectionId)
+    if (section?.location && section.location !== value) {
+      // Clear the old location data when user starts typing something new
+      setSections(prevSections => 
+        prevSections.map(s => 
+          s.id === sectionId 
+            ? {
+                ...s,
+                location: "",
+                coordinates: null,
+                placeDetails: null
+              }
+            : s
+        )
+      );
+    }
+    
     setSearchStates((prev) => ({ ...prev, [sectionId]: value }))
     setActiveSearchSection(sectionId)
-
-    // Only clear location if user completely changes the text (not just typing)
-    // This allows editing while keeping the selection
+    
+    // Clear search results if input is empty
+    if (!value || value.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    
+    // Directly trigger search for immediate feedback when typing
+    searchPlaces(value, sectionId);
   }
 
   const handleSearchInputFocus = (sectionId) => {
+    console.log("Search input focused:", sectionId)
     setActiveSearchSection(sectionId)
     const currentQuery = searchStates[sectionId] || ""
     const section = sections.find((s) => s.id === sectionId)
@@ -281,10 +344,10 @@ export default function ItineraryBuilderPage() {
     // If there's a selected location and no search query, show it in search
     if (section?.location && !currentQuery) {
       setSearchStates((prev) => ({ ...prev, [sectionId]: section.location }))
-    }
-
-    if (currentQuery.length >= 2) {
-      searchPlaces(currentQuery)
+      // Don't search immediately when focusing on existing location
+    } else if (currentQuery.length >= 2) {
+      // Immediately search with existing query
+      searchPlaces(currentQuery, sectionId)
     }
   }
 
@@ -293,7 +356,7 @@ export default function ItineraryBuilderPage() {
     setTimeout(() => {
       setActiveSearchSection(null)
       setSearchResults([])
-    }, 200)
+    }, 300)
   }
 
   const handleImageError = (placeId) => {
@@ -488,9 +551,9 @@ export default function ItineraryBuilderPage() {
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Search Destinations</h3>
+              {/* <h3 className="text-lg font-semibold text-gray-900 mb-4">Search Destinations</h3> */}
 
-              <div className="relative mb-4">
+              {/* <div className="relative mb-4">
                 <input
                   type="text"
                   placeholder="Search for destinations, cities, or countries..."
@@ -539,7 +602,7 @@ export default function ItineraryBuilderPage() {
                     ))}
                   </div>
                 )}
-              </div>
+              {/* </div> */} 
 
               {/* Selected Destinations */}
               {selectedDestinations.length > 0 && (
@@ -585,6 +648,8 @@ export default function ItineraryBuilderPage() {
                   </div>
                 </div>
               )}
+
+              
 
               {/* Itinerary Sections */}
               <div className="space-y-6">
@@ -670,21 +735,37 @@ export default function ItineraryBuilderPage() {
                           onBlur={handleSearchInputBlur}
                           className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                         />
+                        
                         {section.location && (
                           <div className="mt-2 text-sm text-gray-600 flex items-center">
-                            <span className="truncate">Selected: {section.location}</span>
-                            <button
-                              type="button"
-                              className="ml-2 text-red-600 hover:text-red-800"
-                              onClick={() => {
-                                updateSection(section.id, "location", "")
-                                updateSection(section.id, "coordinates", null)
-                                updateSection(section.id, "placeDetails", null) // Clear place details
-                                setSearchStates((prev) => ({ ...prev, [section.id]: "" }))
-                              }}
-                            >
-                              Clear
-                            </button>
+                            <div className="flex items-center space-x-2 bg-green-50 px-3 py-2 rounded-lg border border-green-200">
+                              <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              <span className="truncate text-green-800">Selected: {section.location}</span>
+                              <button
+                                type="button"
+                                className="ml-2 text-red-600 hover:text-red-800"
+                                onClick={() => {
+                                  // Use the same pattern as in selectPlace for consistency
+                                  setSections(prevSections => 
+                                    prevSections.map(s => 
+                                      s.id === section.id 
+                                        ? {
+                                            ...s,
+                                            location: "",
+                                            coordinates: null,
+                                            placeDetails: null
+                                          }
+                                        : s
+                                    )
+                                  );
+                                  setSearchStates((prev) => ({ ...prev, [section.id]: "" }));
+                                }}
+                              >
+                                Clear
+                              </button>
+                            </div>
                           </div>
                         )}
                         {isSearching && activeSearchSection === section.id && (
@@ -696,47 +777,27 @@ export default function ItineraryBuilderPage() {
                         {/* Search Results Dropdown */}
                         {activeSearchSection === section.id && searchResults.length > 0 && (
                           <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                            <div className="p-2 text-sm text-gray-600 border-b border-gray-100">
+                              {searchResults.length} results found
+                            </div>
                             {searchResults.map((place) => (
                               <div
-                                key={place.id}
-                                onClick={() => selectPlace(section.id, place)}
-                                className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                key={place.id || place.place_id}
+                                onMouseDown={(e) => {
+                                  // Use onMouseDown to prevent blur from closing dropdown before click
+                                  e.preventDefault();
+                                  console.log("Place clicked, section ID:", section.id);
+                                  console.log("Place data:", place);
+                                  selectPlace(section.id, place);
+                                }}
+                                className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors duration-150"
                               >
                                 <div className="flex items-center space-x-3">
-                                  <div className="w-10 h-10 flex-shrink-0">
-                                    {place.photos && place.photos[0] && !imageErrors.has(place.id) ? (
-                                      <img
-                                        src={place.photos[0].url || "/placeholder.svg"}
-                                        alt={place.name}
-                                        width={40}
-                                        height={40}
-                                        className="w-10 h-10 object-cover rounded-lg"
-                                        onError={() => handleImageError(place.id)}
-                                        loading="lazy"
-                                      />
-                                    ) : (
-                                      <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
-                                        <svg
-                                          className="w-5 h-5 text-gray-400"
-                                          fill="none"
-                                          stroke="currentColor"
-                                          viewBox="0 0 24 24"
-                                        >
-                                          <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                                          />
-                                          <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                                          />
-                                        </svg>
-                                      </div>
-                                    )}
+                                  <div className="w-10 h-10 flex-shrink-0 bg-gray-100 rounded-lg flex items-center justify-center">
+                                    <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <h4 className="font-medium text-gray-900 truncate">{place.name}</h4>

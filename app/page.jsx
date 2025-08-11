@@ -1,171 +1,234 @@
 "use client"
 
 import Link from "next/link"
-// import { useSession } from "next-auth/react"
 import Button from "../components/ui/Button_1"
-import { useState } from "react"
+import { useState,useEffect, useCallback } from "react"
 import Image from "next/image"
+import TopRegionalCities from "../components/TopRegionalCities"
 
 export default function HomePage() {
-  // const { data: session, status } = useSession()
   const [searchQuery, setSearchQuery] = useState("")
+const [searchResults, setSearchResults] = useState([])
+const [isSearching, setIsSearching] = useState(false)
+const [showResults, setShowResults] = useState(false)
 
-  // Destination data
-  const destinations = [
-    {
-      name: "Italy",
-      count: 12,
-      image: "/Mahibhai.jpg"
-    },
-    {
-      name: "Japan",
-      count: 15,
-      image: "/Mahibhai.jpg"
-    },
-    {
-      name: "Indonesia",
-      count: 14,
-      image: "/Mahibhai.jpg"
+  function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value)
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value)
+    }, delay)
+
+    return () => {
+      clearTimeout(handler)
     }
-  ]
+  }, [value, delay])
 
-  // if (status === "loading") {
-  //   return (
-  //     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-  //       <div className="text-center">
-  //         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-  //         <p className="mt-4 text-gray-600">Loading...</p>
-  //       </div>
-  //     </div>
-  //   )
-  // }
+  return debouncedValue
+}
+
+const debouncedSearchQuery = useDebounce(searchQuery, 400)
+
+const searchDestinations = useCallback(async (query) => {
+  if (!query || query.length < 2) {
+    setSearchResults([])
+    setShowResults(false)
+    return
+  }
+
+  setIsSearching(true)
+  try {
+    const response = await fetch(`/api/destinations/top?search=${encodeURIComponent(query)}&limit=6`)
+    if (!response.ok) {
+      throw new Error('Search failed')
+    }
+
+    const data = await response.json()
+    setSearchResults(data.destinations || [])
+    setShowResults(true)
+  } catch (error) {
+    console.error("Search error:", error)
+    setSearchResults([])
+  } finally {
+    setIsSearching(false)
+  }
+}, [])
+
+// Effect to trigger search when debounced query changes
+useEffect(() => {
+  searchDestinations(debouncedSearchQuery)
+}, [debouncedSearchQuery, searchDestinations])
+
+// Add a function to handle search form submission
+const handleSearchSubmit = (e) => {
+  e.preventDefault()
+  if (searchQuery.trim().length >= 2) {
+    window.location.href = `/search/cities?q=${encodeURIComponent(searchQuery)}`
+  }
+}
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Hero Section with Image and Curved Borders */}
-<div className="relative h-screen w-full overflow-hidden px-4 sm:px-6 lg:px-8 pt-8 pb-12">
-  {/* Image Background with overlay - curved borders */}
-  <div className="absolute inset-0 w-full h-full rounded-3xl overflow-hidden mt-2 mx-auto max-w-6xl shadow-3xl">
-    <Image 
-      src="/hero-travel.jpg" 
-      alt="Travel Landscape" 
-      fill
-      priority
-      className="object-cover"
-    />
-    {/* Gradient overlay to enhance text visibility */}
-    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/30 to-transparent"></div>
-  </div>
-
-  {/* Hero content with adjusted margins */}
-  <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 h-full flex flex-col justify-center">
-    <div className="text-center text-white my-8">
-      <h1 className="text-5xl md:text-7xl font-bold mb-8 drop-shadow-xl">
-        Pack your bags, let&apos;s go<br />
-        <span className="text-white">somewhere amazing</span>
-      </h1>
-      <p className="text-xl text-white/90 mb-10 max-w-3xl mx-auto drop-shadow-lg">
-        Hidden gems, breathtaking views, unforgettable adventures—where will you go next?
-      </p>
-      <div className="flex justify-center mt-4">
-        <Link href="/trips/create">
-          <Button size="lg" className="bg-white text-primary-600 hover:bg-gray-50 shadow-lg px-8 py-3 text-lg rounded-full">
-            Book Now
-          </Button>
-        </Link>
-      </div>
-    </div>
-  </div>
-</div>
-
-      {/* Search Section */}
-      <div className="bg-white py-8 shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div className="w-full md:w-1/2">
-              <div className="relative">
-                <input
-                  type="text"
-                  className="w-full px-5 py-4 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder="Search destinations, activities, or experiences..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                <button className="absolute right-3 top-1/2 -translate-y-1/2 bg-primary-600 text-white p-2 rounded-full">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div className="flex gap-4">
-              <button className="px-4 py-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
-                </svg>
-                Filter
-              </button>
-              <button className="px-4 py-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-                Sort
-              </button>
-            </div>
-          </div>
+      <div className="relative h-screen w-full overflow-hidden px-4 sm:px-6 lg:px-8 pt-8 pb-12">
+        {/* Image Background with overlay - curved borders */}
+        <div className="absolute inset-0 w-full h-full rounded-3xl overflow-hidden mt-2 mx-auto max-w-6xl shadow-3xl">
+          <Image 
+            src="/hero-travel.jpg" 
+            alt="Travel Landscape" 
+            fill
+            priority
+            className="object-cover"
+          />
+          {/* Gradient overlay to enhance text visibility */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/30 to-transparent"></div>
         </div>
-      </div>
 
-      {/* Top Regional Section */}
-      <div className="bg-gray-50 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Our Destination</p>
-              <h2 className="text-3xl font-bold text-gray-900">Your next favorite place awaits</h2>
-            </div>
-            <div className="flex items-center">
-              <p className="text-sm text-gray-500 mr-4 hidden md:block">
-                Get the best value for your trips with exclusive discounts, seasonal promotions, and deals to save while exploring the world!
-              </p>
-              <Link href="/destinations">
-                <Button 
-                  variant="outline" 
-                  className="flex items-center gap-2 bg-black text-white hover:bg-gray-800 border-none px-5 py-2 rounded-full"
-                >
-                  See All
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
+        {/* Hero content with adjusted margins */}
+        <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 h-full flex flex-col justify-center">
+          <div className="text-center text-white my-8">
+            <h1 className="text-5xl md:text-7xl font-bold mb-8 drop-shadow-xl">
+              Pack your bags, let&apos;s go<br />
+              <span className="text-white">somewhere amazing</span>
+            </h1>
+            <p className="text-xl text-white/90 mb-10 max-w-3xl mx-auto drop-shadow-lg">
+              Hidden gems, breathtaking views, unforgettable adventures—where will you go next?
+            </p>
+            <div className="flex justify-center mt-4">
+              <Link href="/trips/create">
+                <Button size="lg" className="bg-white text-primary-600 hover:bg-gray-50 shadow-lg px-8 py-3 text-lg rounded-full">
+                  Book Now
                 </Button>
               </Link>
             </div>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {destinations.map((destination, index) => (
-              <div 
-                key={index} 
-                className="group relative rounded-xl overflow-hidden h-72 shadow-lg transition-transform duration-300 hover:scale-[1.02]"
-              >
-                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-all z-10"></div>
-                <Image 
-                  src={destination.image} 
-                  alt={destination.name} 
-                  fill 
-                  className="object-cover transition-transform duration-500 group-hover:scale-110"
-                />
-                <div className="absolute top-4 left-4 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full z-20">
-                  <p className="text-xs font-medium text-gray-700">{destination.count} Destination</p>
-                </div>
-                <div className="absolute bottom-6 left-6 z-20">
-                  <h3 className="text-2xl font-bold text-white drop-shadow-md">{destination.name}</h3>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
+
+      {/* Search Section */}
+<div className="bg-white py-8 shadow-md relative">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <form onSubmit={handleSearchSubmit} className="flex flex-col md:flex-row gap-4 items-center justify-between">
+      <div className="w-full md:w-1/2">
+        <div className="relative">
+          <input
+            type="text"
+            className="w-full px-5 py-4 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            placeholder="Search destinations, activities, or experiences..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => searchQuery.length >= 2 && setShowResults(true)}
+          />
+          <button 
+            type="submit"
+            className="absolute right-3 top-1/2 -translate-y-1/2 bg-primary-600 text-white p-2 rounded-full"
+          >
+            {isSearching ? (
+              <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            )}
+          </button>
+          
+          {/* Search Results Dropdown */}
+          {showResults && searchResults.length > 0 && (
+            <div className="absolute z-50 w-full mt-2 bg-white rounded-lg shadow-xl border border-gray-200 max-h-96 overflow-y-auto">
+              <div className="p-3 border-b border-gray-200">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-sm font-medium text-gray-700">Search Results</h3>
+                  <button 
+                    type="button"
+                    onClick={() => setShowResults(false)} 
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              
+              <ul className="py-2">
+                {searchResults.map((destination, index) => (
+                  <li key={index}>
+                    <Link 
+                      href={`/search/cities?q=${encodeURIComponent(destination.name)}`}
+                      className="flex items-center px-4 py-3 hover:bg-gray-50"
+                      onClick={() => setShowResults(false)}
+                    >
+                      <div className="h-10 w-10 bg-gray-200 rounded-full overflow-hidden flex-shrink-0 mr-3">
+                        {destination.image && (
+                          <img 
+                            src={destination.image} 
+                            alt={destination.name}
+                            className="h-full w-full object-cover"
+                          />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{destination.name}</p>
+                        <p className="text-xs text-gray-500">{destination.country} • {destination.count} {destination.count === 1 ? 'Trip' : 'Trips'}</p>
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+                
+                <li className="px-4 py-2 border-t border-gray-100">
+                  <Link 
+                    href={`/search/cities?q=${encodeURIComponent(searchQuery)}`}
+                    className="text-sm text-primary-600 hover:text-primary-800 flex items-center justify-center"
+                    onClick={() => setShowResults(false)}
+                  >
+                    View all results
+                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      <div className="flex gap-4">
+        <button 
+          type="button"
+          className="px-4 py-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center gap-2"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+          </svg>
+          Filter
+        </button>
+        <button 
+          type="button"
+          className="px-4 py-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center gap-2"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+          Sort
+        </button>
+      </div>
+    </form>
+  </div>
+  
+  {/* Click outside to close results */}
+  {showResults && (
+    <div 
+      className="fixed inset-0 z-40 bg-transparent" 
+      onClick={() => setShowResults(false)}
+    ></div>
+  )}
+</div>
+
+      {/* Top Regional Cities - Using the component */}
+      <TopRegionalCities />
 
       {/* Features Section */}
       <div className="bg-white py-16">
@@ -176,6 +239,7 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Features... (rest of your feature sections) */}
             {/* Feature 1 */}
             <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100">
               <div className="w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4">
@@ -278,7 +342,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* CTA Section - Simplified without session checks */}
+      {/* CTA Section */}
       <div className="bg-primary-600 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold text-white mb-4">Ready to start your adventure?</h2>
@@ -306,6 +370,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">
+        {/* Footer content (rest of your footer) */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {/* Company Info */}
