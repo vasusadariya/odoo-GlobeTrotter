@@ -248,6 +248,23 @@ export default function ItineraryViewPage() {
     setShowOptimizeModal(false)
   }
 
+  // Calculate the day number based on activity date relative to trip start date
+  const calculateDayNumber = (activityDate) => {
+    if (!trip?.startDate || !activityDate) return 1
+    
+    const tripStart = new Date(trip.startDate)
+    const activityDateObj = new Date(activityDate)
+    
+    // Reset time to start of day for accurate day calculation
+    tripStart.setHours(0, 0, 0, 0)
+    activityDateObj.setHours(0, 0, 0, 0)
+    
+    const timeDiff = activityDateObj.getTime() - tripStart.getTime()
+    const dayDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24))
+    
+    return dayDiff + 1 // Add 1 because Day 1 starts on trip start date
+  }
+
   const totalBudget = itinerary.reduce((total, section) => total + (section.budget || 0), 0)
 
   if (status === "loading" || isLoading) {
@@ -455,7 +472,7 @@ export default function ItineraryViewPage() {
                                 {/* Day Badge */}
                                 <div className="flex flex-col">
                                   <div className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-bold">
-                                    Day {index + 1}
+                                    Day {calculateDayNumber(section.startDate)}
                                   </div>
                                   <span className="text-xs text-gray-500 mt-1 capitalize">{section.type}</span>
                                 </div>
