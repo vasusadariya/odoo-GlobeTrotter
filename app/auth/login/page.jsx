@@ -5,8 +5,8 @@ import { signIn, getSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import Link from 'next/link';
-import Button from '../../../components/ui/Button';
-import Input from '../../../components/ui/Input';
+import Button from '../../../components/ui/Button_1';
+import Input from '../../../components/ui/Input_1';
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -65,7 +65,7 @@ export default function LoginPage() {
           Sign in to your account
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Don't have an account?{' '}
+          Don&apos;t have an account?{' '}
           <Link href="/auth/register" className="font-medium text-primary-600 hover:text-primary-500">
             Sign up here
           </Link>
