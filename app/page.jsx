@@ -1,66 +1,168 @@
 "use client"
 
 import Link from "next/link"
-import { useSession } from "next-auth/react"
+// import { useSession } from "next-auth/react"
 import Button from "../components/ui/Button_1"
+import { useState } from "react"
+import Image from "next/image"
 
 export default function HomePage() {
-  const { data: session, status } = useSession()
+  // const { data: session, status } = useSession()
+  const [searchQuery, setSearchQuery] = useState("")
 
-  if (status === "loading") {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    )
-  }
+  // Destination data
+  const destinations = [
+    {
+      name: "Italy",
+      count: 12,
+      image: "/Mahibhai.jpg"
+    },
+    {
+      name: "Japan",
+      count: 15,
+      image: "/Mahibhai.jpg"
+    },
+    {
+      name: "Indonesia",
+      count: 14,
+      image: "/Mahibhai.jpg"
+    }
+  ]
+
+  // if (status === "loading") {
+  //   return (
+  //     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+  //       <div className="text-center">
+  //         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+  //         <p className="mt-4 text-gray-600">Loading...</p>
+  //       </div>
+  //     </div>
+  //   )
+  // }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Hero Section */}
-      <div className="relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
-          <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-              Plan Your Perfect
-              <span className="text-primary-600"> Adventure</span>
-            </h1>
-            <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Create customized multi-city itineraries, assign travel dates and activities, discover destinations
-              through intelligent search, and share your plans with the world.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              {session ? (
-                <>
-                  <Link href="/dashboard">
-                    <Button size="lg" className="w-full sm:w-auto">
-                      Go to Dashboard
-                    </Button>
-                  </Link>
-                  <Link href="/trips/create">
-                    <Button variant="outline" size="lg" className="w-full sm:w-auto bg-transparent">
-                      Create New Trip
-                    </Button>
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <Link href="/auth/register">
-                    <Button size="lg" className="w-full sm:w-auto">
-                      Start Planning Now
-                    </Button>
-                  </Link>
-                  <Link href="/auth/login">
-                    <Button variant="outline" size="lg" className="w-full sm:w-auto bg-transparent">
-                      Sign In
-                    </Button>
-                  </Link>
-                </>
-              )}
+      {/* Hero Section with Image and Curved Borders */}
+<div className="relative h-screen w-full overflow-hidden px-4 sm:px-6 lg:px-8 pt-8 pb-12">
+  {/* Image Background with overlay - curved borders */}
+  <div className="absolute inset-0 w-full h-full rounded-3xl overflow-hidden mt-2 mx-auto max-w-6xl shadow-3xl">
+    <Image 
+      src="/hero-travel.jpg" 
+      alt="Travel Landscape" 
+      fill
+      priority
+      className="object-cover"
+    />
+    {/* Gradient overlay to enhance text visibility */}
+    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/30 to-transparent"></div>
+  </div>
+
+  {/* Hero content with adjusted margins */}
+  <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 h-full flex flex-col justify-center">
+    <div className="text-center text-white my-8">
+      <h1 className="text-5xl md:text-7xl font-bold mb-8 drop-shadow-xl">
+        Pack your bags, let&apos;s go<br />
+        <span className="text-white">somewhere amazing</span>
+      </h1>
+      <p className="text-xl text-white/90 mb-10 max-w-3xl mx-auto drop-shadow-lg">
+        Hidden gems, breathtaking views, unforgettable adventures—where will you go next?
+      </p>
+      <div className="flex justify-center mt-4">
+        <Link href="/trips/create">
+          <Button size="lg" className="bg-white text-primary-600 hover:bg-gray-50 shadow-lg px-8 py-3 text-lg rounded-full">
+            Book Now
+          </Button>
+        </Link>
+      </div>
+    </div>
+  </div>
+</div>
+
+      {/* Search Section */}
+      <div className="bg-white py-8 shadow-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="w-full md:w-1/2">
+              <div className="relative">
+                <input
+                  type="text"
+                  className="w-full px-5 py-4 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="Search destinations, activities, or experiences..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <button className="absolute right-3 top-1/2 -translate-y-1/2 bg-primary-600 text-white p-2 rounded-full">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </button>
+              </div>
             </div>
+            <div className="flex gap-4">
+              <button className="px-4 py-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                </svg>
+                Filter
+              </button>
+              <button className="px-4 py-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+                Sort
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Top Regional Section */}
+      <div className="bg-gray-50 py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Our Destination</p>
+              <h2 className="text-3xl font-bold text-gray-900">Your next favorite place awaits</h2>
+            </div>
+            <div className="flex items-center">
+              <p className="text-sm text-gray-500 mr-4 hidden md:block">
+                Get the best value for your trips with exclusive discounts, seasonal promotions, and deals to save while exploring the world!
+              </p>
+              <Link href="/destinations">
+                <Button 
+                  variant="outline" 
+                  className="flex items-center gap-2 bg-black text-white hover:bg-gray-800 border-none px-5 py-2 rounded-full"
+                >
+                  See All
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                </Button>
+              </Link>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {destinations.map((destination, index) => (
+              <div 
+                key={index} 
+                className="group relative rounded-xl overflow-hidden h-72 shadow-lg transition-transform duration-300 hover:scale-[1.02]"
+              >
+                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-all z-10"></div>
+                <Image 
+                  src={destination.image} 
+                  alt={destination.name} 
+                  fill 
+                  className="object-cover transition-transform duration-500 group-hover:scale-110"
+                />
+                <div className="absolute top-4 left-4 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full z-20">
+                  <p className="text-xs font-medium text-gray-700">{destination.count} Destination</p>
+                </div>
+                <div className="absolute bottom-6 left-6 z-20">
+                  <h3 className="text-2xl font-bold text-white drop-shadow-md">{destination.name}</h3>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -176,7 +278,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* CTA Section */}
+      {/* CTA Section - Simplified without session checks */}
       <div className="bg-primary-600 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold text-white mb-4">Ready to start your adventure?</h2>
@@ -184,30 +286,20 @@ export default function HomePage() {
             Join thousands of travelers who trust GlobeTrotter to plan their perfect trips.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            {session ? (
-              <Link href="/trips/create">
-                <Button size="lg" className="w-full sm:w-auto bg-white text-primary-600 hover:bg-gray-50">
-                  Create Your First Trip
-                </Button>
-              </Link>
-            ) : (
-              <>
-                <Link href="/auth/register">
-                  <Button size="lg" className="w-full sm:w-auto bg-white text-primary-600 hover:bg-gray-50">
-                    Get Started Free
-                  </Button>
-                </Link>
-                <Link href="/public-trips">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="w-full sm:w-auto border-white text-white hover:bg-white hover:text-primary-600 bg-transparent"
-                  >
-                    Explore Public Trips
-                  </Button>
-                </Link>
-              </>
-            )}
+            <Link href="/auth/register">
+              <Button size="lg" className="w-full sm:w-auto bg-white text-primary-600 hover:bg-gray-50">
+                Get Started Free
+              </Button>
+            </Link>
+            <Link href="/public-trips">
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full sm:w-auto border-white text-white hover:bg-white hover:text-primary-600 bg-transparent"
+              >
+                Explore Public Trips
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
