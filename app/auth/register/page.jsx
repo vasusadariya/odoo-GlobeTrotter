@@ -35,8 +35,13 @@ export default function RegisterPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: data.name,
+          firstName: data.firstName,
+          lastName: data.lastName,
           email: data.email,
+          phone: data.phone,
+          city: data.city,
+          country: data.country,
+          additionalInfo: data.additionalInfo,
           password: data.password,
         }),
       })
@@ -77,7 +82,7 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+      <div className="sm:mx-auto sm:w-full sm:max-w-2xl">
         {/* Logo */}
         <div className="flex justify-center">
           <div className="flex items-center space-x-2">
@@ -103,7 +108,7 @@ export default function RegisterPage() {
         </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-2xl">
         <div className="bg-white py-8 px-4 shadow-medium sm:rounded-2xl sm:px-10">
           {error && (
             <div className="mb-4 bg-red-50 border-l-4 border-red-400 p-4 rounded-r-xl">
@@ -118,63 +123,148 @@ export default function RegisterPage() {
           )}
 
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-            <Input
-              label="Full Name"
-              type="text"
-              placeholder="Enter your full name"
-              {...register("name", {
-                required: "Name is required",
-                minLength: {
-                  value: 2,
-                  message: "Name must be at least 2 characters",
-                },
-              })}
-              error={errors.name?.message}
-            />
+            {/* Name Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Input
+                label="First Name"
+                type="text"
+                placeholder="Enter your first name"
+                {...register("firstName", {
+                  required: "First name is required",
+                  minLength: {
+                    value: 2,
+                    message: "First name must be at least 2 characters",
+                  },
+                })}
+                error={errors.firstName?.message}
+              />
 
-            <Input
-              label="Email address"
-              type="email"
-              placeholder="Enter your email"
-              {...register("email", {
-                required: "Email is required",
-                pattern: {
-                  value: /^\S+@\S+$/i,
-                  message: "Invalid email address",
-                },
-              })}
-              error={errors.email?.message}
-            />
+              <Input
+                label="Last Name"
+                type="text"
+                placeholder="Enter your last name"
+                {...register("lastName", {
+                  required: "Last name is required",
+                  minLength: {
+                    value: 2,
+                    message: "Last name must be at least 2 characters",
+                  },
+                })}
+                error={errors.lastName?.message}
+              />
+            </div>
 
-            <Input
-              label="Password"
-              type="password"
-              placeholder="Create a password"
-              showPasswordToggle={true}
-              {...register("password", {
-                required: "Password is required",
-                minLength: {
-                  value: 6,
-                  message: "Password must be at least 6 characters",
-                },
-              })}
-              error={errors.password?.message}
-            />
+            {/* Contact Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Input
+                label="Email Address"
+                type="email"
+                placeholder="Enter your email"
+                {...register("email", {
+                  required: "Email is required",
+                  pattern: {
+                    value: /^\S+@\S+$/i,
+                    message: "Invalid email address",
+                  },
+                })}
+                error={errors.email?.message}
+              />
 
-            <Input
-              label="Confirm Password"
-              type="password"
-              placeholder="Confirm your password"
-              showPasswordToggle={true}
-              {...register("confirmPassword", {
-                required: "Please confirm your password",
-                validate: (value) => value === password || "Passwords do not match",
-              })}
-              error={errors.confirmPassword?.message}
-            />
+              <Input
+                label="Phone Number"
+                type="tel"
+                placeholder="Enter your phone number"
+                {...register("phone", {
+                  required: "Phone number is required",
+                  pattern: {
+                    value: /^[+]?[1-9][\d]{0,15}$/,
+                    message: "Invalid phone number",
+                  },
+                })}
+                error={errors.phone?.message}
+              />
+            </div>
+
+            {/* Location Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Input
+                label="City"
+                type="text"
+                placeholder="Enter your city"
+                {...register("city", {
+                  required: "City is required",
+                  minLength: {
+                    value: 2,
+                    message: "City must be at least 2 characters",
+                  },
+                })}
+                error={errors.city?.message}
+              />
+
+              <Input
+                label="Country"
+                type="text"
+                placeholder="Enter your country"
+                {...register("country", {
+                  required: "Country is required",
+                  minLength: {
+                    value: 2,
+                    message: "Country must be at least 2 characters",
+                  },
+                })}
+                error={errors.country?.message}
+              />
+            </div>
+
+            {/* Additional Information */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Additional Information</label>
+              <textarea
+                placeholder="Tell us more about yourself, your travel preferences, or any other information you'd like to share..."
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
+                {...register("additionalInfo", {
+                  maxLength: {
+                    value: 500,
+                    message: "Additional information must be less than 500 characters",
+                  },
+                })}
+              />
+              {errors.additionalInfo && <p className="mt-1 text-sm text-red-600">{errors.additionalInfo.message}</p>}
+            </div>
+
+            {/* Password Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Input
+                label="Password"
+                type="password"
+                placeholder="Create a password"
+                showPasswordToggle={true}
+                {...register("password", {
+                  required: "Password is required",
+                  minLength: {
+                    value: 6,
+                    message: "Password must be at least 6 characters",
+                  },
+                })}
+                error={errors.password?.message}
+              />
+
+              <Input
+                label="Confirm Password"
+                type="password"
+                placeholder="Confirm your password"
+                showPasswordToggle={true}
+                {...register("confirmPassword", {
+                  required: "Please confirm your password",
+                  validate: (value) => value === password || "Passwords do not match",
+                })}
+                error={errors.confirmPassword?.message}
+              />
+            </div>
 
             <Button type="submit" className="w-full" loading={isLoading} disabled={isLoading}>
-              Create Account
+              Register User
             </Button>
           </form>
 

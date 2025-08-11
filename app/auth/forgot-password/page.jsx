@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import Link from 'next/link';
-import Button from '../../../components/ui/Button';
-import Input from '../../../components/ui/Input';
+import Button from '../../../components/ui/Button_1';
+import Input from '../../../components/ui/Input_1';
 
 export default function ForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -88,7 +88,7 @@ export default function ForgotPasswordPage() {
             <>
               <div className="text-center mb-6">
                 <p className="text-sm text-gray-600">
-                  Enter your email address and we'll send you a link to reset your password.
+                  Enter your email address and we&apos;ll send you a link to reset your password.
                 </p>
               </div>
 
@@ -126,7 +126,7 @@ export default function ForgotPasswordPage() {
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">Check your email</h3>
               <p className="text-sm text-gray-600 mb-6">
-                We've sent a password reset link to your email address.
+                We&apos;ve sent a password reset link to your email address.
               </p>
               <Link href="/auth/login">
                 <Button variant="outline" className="w-full">
