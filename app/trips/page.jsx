@@ -15,7 +15,7 @@ export default function TripsListPage() {
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/auth/login")
+      router.replace("/auth/login")
       return
     }
 
@@ -193,12 +193,12 @@ export default function TripsListPage() {
                         View Details
                       </Button>
                     </Link>
-                    <Link href={`/trips/${trip._id || trip.id}/itinerary`}>
+                    <Link href={`/trips/${trip.id}/itinerary`}>
                       <Button size="sm" className="whitespace-nowrap">
                         Edit
                       </Button>
                     </Link>
-                    <Link href={`/trips/${trip._id || trip.id}/itinerary/view`}>
+                    <Link href={`/trips/${trip.id}/itinerary/view`}>
                       <Button variant="outline" size="sm" className="whitespace-nowrap bg-transparent">
                         View
                       </Button>

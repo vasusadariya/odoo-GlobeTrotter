@@ -1,10 +1,19 @@
 import { NextResponse } from "next/server"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "../../../../lib/auth"
 
 // Force this route to be dynamic
 export const dynamic = "force-dynamic"
 
 export async function GET(request) {
   try {
+    // Added authentication check for API security
+    const session = await getServerSession(authOptions)
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const { searchParams } = new URL(request.url)
     const query = searchParams.get("q")
 
