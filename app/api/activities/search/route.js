@@ -1,4 +1,4 @@
-    import { NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 
 // Force this route to be dynamic
 export const dynamic = "force-dynamic"
@@ -163,6 +163,26 @@ function getMockActivities(location, country) {
         category: "sightseeing",
         rating: 4.4,
       },
+      {
+        id: "montmartre",
+        name: "Montmartre District",
+        description: "Explore the artistic neighborhood and visit Sacré-Cœur Basilica",
+        location: "Montmartre, 75018 Paris, France",
+        estimatedCost: 0,
+        duration: "3-4 hours",
+        category: "culture",
+        rating: 4.5,
+      },
+      {
+        id: "versailles",
+        name: "Palace of Versailles",
+        description: "Tour the opulent royal palace and its magnificent gardens",
+        location: "Place d'Armes, 78000 Versailles, France",
+        estimatedCost: 20,
+        duration: "Full day",
+        category: "culture",
+        rating: 4.6,
+      },
     ]
   }
 
@@ -198,6 +218,26 @@ function getMockActivities(location, country) {
         category: "food",
         rating: 4.4,
       },
+      {
+        id: "shibuya-crossing",
+        name: "Shibuya Crossing",
+        description: "Experience the world's busiest pedestrian crossing",
+        location: "Shibuya City, Tokyo, Japan",
+        estimatedCost: 0,
+        duration: "30 minutes",
+        category: "sightseeing",
+        rating: 4.2,
+      },
+      {
+        id: "meiji-shrine",
+        name: "Meiji Shrine",
+        description: "Visit the serene Shinto shrine dedicated to Emperor Meiji",
+        location: "1-1 Kamizono-cho, Shibuya City, Tokyo, Japan",
+        estimatedCost: 0,
+        duration: "1-2 hours",
+        category: "culture",
+        rating: 4.4,
+      },
     ]
   }
 
@@ -231,6 +271,61 @@ function getMockActivities(location, country) {
         estimatedCost: 0,
         duration: "1-2 hours",
         category: "nature",
+        rating: 4.4,
+      },
+      {
+        id: "london-eye",
+        name: "London Eye",
+        description: "Enjoy panoramic views of London from this giant observation wheel",
+        location: "Riverside Building, County Hall, London SE1 7PB, UK",
+        estimatedCost: 35,
+        duration: "1 hour",
+        category: "sightseeing",
+        rating: 4.3,
+      },
+      {
+        id: "westminster-abbey",
+        name: "Westminster Abbey",
+        description: "Explore the historic church where British monarchs are crowned",
+        location: "20 Deans Yd, Westminster, London SW1P 3PA, UK",
+        estimatedCost: 25,
+        duration: "2-3 hours",
+        category: "culture",
+        rating: 4.6,
+      },
+    ]
+  }
+
+  if (locationLower.includes("new york")) {
+    return [
+      {
+        id: "statue-of-liberty",
+        name: "Statue of Liberty",
+        description: "Visit America's symbol of freedom on Liberty Island",
+        location: "New York, NY 10004, USA",
+        estimatedCost: 25,
+        duration: "3-4 hours",
+        category: "sightseeing",
+        rating: 4.5,
+      },
+      {
+        id: "central-park",
+        name: "Central Park",
+        description: "Stroll through Manhattan's green oasis",
+        location: "New York, NY, USA",
+        estimatedCost: 0,
+        duration: "2-3 hours",
+        category: "nature",
+        rating: 4.6,
+      },
+      {
+        id: "empire-state-building",
+        name: "Empire State Building",
+        description: "Take in stunning city views from the iconic skyscraper",
+        location: "20 W 34th St, New York, NY 10001, USA",
+        estimatedCost: 40,
+        duration: "1-2 hours",
+        category: "sightseeing",
         rating: 4.4,
       },
     ]
@@ -277,6 +372,16 @@ function getMockActivities(location, country) {
       duration: "1-2 hours",
       category: "nature",
       rating: 4.1,
+    },
+    {
+      id: "historic-district",
+      name: `${location} Historic District`,
+      description: `Discover the historical architecture and stories of ${location}`,
+      location: `${location}${country ? `, ${country}` : ""}`,
+      estimatedCost: 5,
+      duration: "1-2 hours",
+      category: "culture",
+      rating: 4.0,
     },
   ]
 }
