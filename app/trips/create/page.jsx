@@ -165,11 +165,14 @@ export default function CreateTripPage() {
   }
 
   const selectPlace = (place) => {
+    console.log("Place selected:", place);
+    console.log("Coordinates:", place.geometry?.location);
+    
     const destination = {
       id: place.id,
       name: place.name,
       formatted_address: place.formatted_address,
-      coordinates: place.geometry?.location,
+      coordinates: place.geometry?.location || { lat: null, lng: null },
       placeId: place.id,
       activities: [],
     }
@@ -216,11 +219,13 @@ export default function CreateTripPage() {
         destinations: selectedDestinations.map((dest) => ({
           name: dest.name,
           country: dest.formatted_address.split(", ").pop(),
-          coordinates: dest.coordinates,
+          coordinates: dest.coordinates || { lat: null, lng: null },
           placeId: dest.placeId,
-          activities: dest.activities,
+          activities: dest.activities || [],
         })),
       }
+
+      console.log("Submitting trip data:", tripData);
 
       const response = await fetch("/api/trips", {
         method: "POST",
@@ -565,6 +570,11 @@ export default function CreateTripPage() {
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-gray-900 truncate">{destination.name}</h4>
                         <p className="text-sm text-gray-600 truncate">{destination.formatted_address}</p>
+                        {destination.coordinates && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            Coordinates: {destination.coordinates.lat?.toFixed(6)}, {destination.coordinates.lng?.toFixed(6)}
+                          </p>
+                        )}
                       </div>
                       <button
                         type="button"

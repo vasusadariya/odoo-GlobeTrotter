@@ -45,6 +45,8 @@ export async function POST(request) {
       destinations: data.destinations.map((dest) => ({
         name: dest.name,
         country: dest.country,
+        coordinates: dest.coordinates || { lat: null, lng: null },
+        placeId: dest.placeId,
         activities: dest.activities || [],
       })),
       owner: session.user.id,
