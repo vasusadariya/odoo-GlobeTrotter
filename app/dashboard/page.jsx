@@ -14,7 +14,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (status === "loading") return // Still loading
-    if (!session) router.push("/auth/login") // Not authenticated
+    if (!session) router.replace("/auth/login") // Not authenticated
   }, [session, status, router])
 
   useEffect(() => {
@@ -183,12 +183,12 @@ export default function DashboardPage() {
                           </div>
                         </div>
                         <div className="flex items-center space-x-3">
-                          <Link href={`/trips/${trip._id || trip.id}/itinerary`}>
+                          <Link href={`/trips/${trip.id}/itinerary`}>
                             <Button variant="outline" size="sm" onClick={(e) => e.stopPropagation()}>
                               Build Itinerary
                             </Button>
                           </Link>
-                          <Link href={`/trips/${trip._id || trip.id}/itinerary/view`}>
+                          <Link href={`/trips/${trip.id}/itinerary/view`}>
                             <Button size="sm" onClick={(e) => e.stopPropagation()}>
                               View Itinerary
                             </Button>

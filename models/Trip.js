@@ -42,6 +42,7 @@ const itineraryItemSchema = new mongoose.Schema({
     enum: ["destination", "accommodation", "transport", "activity", "meal", "other"],
     default: "activity",
   },
+  destinations: [destinationSchema],
   startDate: { type: Date, required: true },
   endDate: { type: Date, required: true },
   budget: { type: Number, default: 0 },
