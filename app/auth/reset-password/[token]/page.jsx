@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import Link from 'next/link';
-import Button from '../../../../components/ui/Button';
-import Input from '../../../../components/ui/Input';
+import Button from '../../../../components/ui/Button_1';
+import Input from '../../../../components/ui/Input_1';
 
 export default function ResetPasswordPage({ params }) {
   const [isLoading, setIsLoading] = useState(false);
