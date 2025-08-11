@@ -6,6 +6,8 @@ import { useEffect, useState } from "react"
 import React from "react"
 import Link from "next/link"
 import Button from "../../components/ui/Button_1"
+import Lottie from "lottie-react";
+import aiLoadingAnimation from "../../public/ai-loading.json";
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
@@ -231,17 +233,17 @@ export default function DashboardPage() {
                                 Build Itinerary
                               </Button>
                             </Link>
+                            
                             <Link href={`/trips/${trip.id}/itinerary/view`}>
                               <Button size="sm" onClick={(e) => e.stopPropagation()}>
                                 View Itinerary
                               </Button>
                             </Link>
-                            <Button size="sm" variant="secondary" onClick={(e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  openModal(trip.id);
-}}
->
+                            <Button size="sm" variant="ai" onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                openModal(trip.id);
+                              }}>
                               Generate Itinerary
                             </Button>
                             <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -337,7 +339,7 @@ export default function DashboardPage() {
         </div>
       </div>
       {/* Modal for Generate Itinerary */}
-      {showModal && (
+      {/* {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
           <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md">
             <h2 className="text-xl font-bold mb-4">Generate Itinerary</h2>
@@ -356,6 +358,139 @@ export default function DashboardPage() {
                 Generate
               </Button>
             </div>
+          </div>
+        </div>
+      )} */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-auto flex flex-col items-center transform transition-all duration-300 scale-100 max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent hover:scrollbar-thumb-gray-400">
+            {isGenerating ? (
+              <>
+                <div className="text-center mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">AI is crafting your itinerary</h3>
+                  <p className="text-gray-600 text-sm">Please wait while we create the perfect travel plan for you...</p>
+                </div>
+                <div className="bg-white rounded-xl p-4 w-full flex justify-center items-center">
+                  <Lottie 
+                    animationData={aiLoadingAnimation} 
+                    loop={true} 
+                    style={{ 
+                      width: 250, 
+                      height: 250, 
+                      backgroundColor: 'white',
+                      borderRadius: '12px'
+                    }} 
+                  />
+                </div>
+                <div className="mt-4 text-center">
+                  <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-cyan-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-center mb-6">
+                  <div className="w-16 h-16 bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg ring-4 ring-purple-100">
+                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                      />
+                    </svg>
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-900 mb-2">Generate AI Itinerary</h2>
+                  <p className="text-gray-600 text-sm">Describe your travel preferences and let AI create the perfect itinerary</p>
+                </div>
+
+                <div className="w-full space-y-4">
+                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 border border-blue-200">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                      </div>
+                      <h3 className="font-semibold text-gray-800 text-sm">AI Travel Assistant</h3>
+                    </div>
+                    <p className="text-xs text-gray-600">
+                      Our AI will analyze your preferences and create a personalized itinerary with activities, restaurants, and attractions tailored just for you.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Tell us about your travel preferences
+                    </label>
+                    <div className="relative">
+                      <textarea
+                        className="w-full border-2 border-gray-200 rounded-xl p-3 text-sm resize-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 placeholder-gray-400"
+                        rows={3}
+                        value={prompt}
+                        onChange={e => setPrompt(e.target.value)}
+                        placeholder="e.g., I love adventure sports, local cuisine, and historical sites. Budget-friendly options preferred..."
+                        disabled={isGenerating}
+                      />
+                      <div className="absolute bottom-2 right-3 text-xs text-gray-400">
+                        {prompt.length}/500
+                      </div>
+                    </div>
+                    {prompt.length < 10 && (
+                      <p className="text-xs text-amber-600 flex items-center">
+                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                        Add more details for better AI recommendations
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-100">
+                    <Button 
+                      variant="ghost" 
+                      onClick={closeModal} 
+                      disabled={isGenerating}
+                      className="flex-1 py-2 font-medium text-sm"
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      variant="ai"
+                      onClick={handleGenerate} 
+                      loading={isGenerating} 
+                      disabled={!prompt || isGenerating}
+                      className="flex-1 py-2 font-medium text-sm relative overflow-hidden"
+                    >
+                      <div className="flex items-center justify-center">
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13 10V3L4 14h7v7l9-11h-7z"
+                          />
+                        </svg>
+                        Generate Itinerary
+                      </div>
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
