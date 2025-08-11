@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "../../../auth/[...nextauth]/route"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "../../../../../lib/auth"
 import connectDB from "../../../../../lib/mongodb"
 import Trip from "../../../../../models/Trip"
 
@@ -16,7 +16,7 @@ export async function GET(request, { params }) {
 
     const trip = await Trip.findOne({
       _id: params.id,
-      userId: session.user.id,
+      owner: session.user.id,
     })
 
     if (!trip) {
@@ -57,7 +57,7 @@ export async function POST(request, { params }) {
     const trip = await Trip.findOneAndUpdate(
       {
         _id: params.id,
-        userId: session.user.id,
+        owner: session.user.id,
       },
       {
         $set: { itinerary },

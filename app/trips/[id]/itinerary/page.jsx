@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useParams } from "next/navigation"
@@ -19,10 +19,11 @@ export default function ItineraryBuilderPage() {
   const [error, setError] = useState("")
   const [suggestedActivities, setSuggestedActivities] = useState([])
   const [loadingActivities, setLoadingActivities] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
+  const [searchStates, setSearchStates] = useState({})
   const [searchResults, setSearchResults] = useState([])
   const [isSearching, setIsSearching] = useState(false)
-  const [showDropdown, setShowDropdown] = useState(false)
+  const [activeSearchSection, setActiveSearchSection] = useState(null)
+  const [imageErrors, setImageErrors] = useState(new Set())
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -46,20 +47,26 @@ export default function ItineraryBuilderPage() {
       }
 
       const response = await fetch(`/api/trips/${params.id}`)
-
       if (!response.ok) {
         const errorData = await response.json()
         setError(errorData.error || "Failed to load trip")
         return
       }
-
       const data = await response.json()
       setTrip(data.trip)
 
-      // Load existing itinerary or create initial sections
-      if (data.trip.itinerary && data.trip.itinerary.length > 0) {
-        setSections(data.trip.itinerary)
-      } else if (data.trip.destinations && data.trip.destinations.length > 0) {
+      // Try to load itinerary from dedicated endpoint
+      const itineraryRes = await fetch(`/api/trips/${params.id}/itinerary`)
+      if (itineraryRes.ok) {
+        const itineraryData = await itineraryRes.json()
+        if (Array.isArray(itineraryData.itinerary) && itineraryData.itinerary.length > 0) {
+          setSections(itineraryData.itinerary)
+          return
+        }
+      }
+
+      // Fallback: create sections from destinations
+      if (data.trip.destinations && data.trip.destinations.length > 0) {
         // Create sections from destinations
         const initialSections = data.trip.destinations.map((dest, index) => ({
           id: `section-${Date.now()}-${index}`,
@@ -86,6 +93,93 @@ export default function ItineraryBuilderPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // Debounce hook
+  function useDebounce(value, delay) {
+    const [debouncedValue, setDebouncedValue] = useState(value)
+
+    useEffect(() => {
+      const handler = setTimeout(() => setDebouncedValue(value), delay)
+      return () => clearTimeout(handler)
+    }, [value, delay])
+
+    return debouncedValue
+  }
+
+  const debouncedSearchQuery = useDebounce(searchStates[activeSearchSection] || "", 300)
+
+  const handleImageError = (placeId) => {
+    setImageErrors((prev) => new Set([...prev, placeId]))
+  }
+
+  const searchPlaces = useCallback(async (query) => {
+    if (!query || query.length < 2) {
+      setSearchResults([])
+      setActiveSearchSection(null)
+      return
+    }
+
+    setIsSearching(true)
+    try {
+      const response = await fetch(`/api/places/search?q=${encodeURIComponent(query)}`)
+      const data = await response.json()
+      if (response.ok) {
+        setSearchResults(data.places || [])
+      } else {
+        setSearchResults([])
+      }
+    } catch (err) {
+      setSearchResults([])
+    } finally {
+      setIsSearching(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    searchPlaces(debouncedSearchQuery)
+  }, [debouncedSearchQuery, searchPlaces])
+
+  const selectPlace = (sectionId, place) => {
+    console.log("Selecting place:", { sectionId, place })
+    updateSection(sectionId, "location", place.name)
+    updateSection(sectionId, "coordinates", place.geometry?.location || null)
+    // Keep the selected place visible in the input (like create page)
+    setSearchStates(prev => ({ ...prev, [sectionId]: place.name }))
+    setSearchResults([])
+    setActiveSearchSection(null)
+    console.log("Updated section with location:", place.name)
+  }
+
+  const handleSearchInputChange = (sectionId, value) => {
+    setSearchStates(prev => ({ ...prev, [sectionId]: value }))
+    setActiveSearchSection(sectionId)
+    
+    // Only clear location if user completely changes the text (not just typing)
+    // This allows editing while keeping the selection
+  }
+
+  const handleSearchInputFocus = (sectionId) => {
+    setActiveSearchSection(sectionId)
+    const currentQuery = searchStates[sectionId] || ""
+    const section = sections.find(s => s.id === sectionId)
+    
+    // If there's a selected location and no search query, show it in search
+    if (section?.location && !currentQuery) {
+      setSearchStates(prev => ({ ...prev, [sectionId]: section.location }))
+    }
+    
+    if (currentQuery.length >= 2) {
+      searchPlaces(currentQuery)
+    }
+  }
+
+  const handleSearchInputBlur = () => {
+    // Keep dropdown open briefly to allow clicking on results
+    setTimeout(() => {
+      setActiveSearchSection(null)
+      setSearchResults([])
+    }, 200)
   }
 
   const loadActivitiesForDestinations = async (destinations) => {
@@ -133,9 +227,14 @@ export default function ItineraryBuilderPage() {
   }
 
   const updateSection = (sectionId, field, value) => {
-    setSections((prevSections) =>
-      prevSections.map((section) => (section.id === sectionId ? { ...section, [field]: value } : section)),
-    )
+    console.log("Updating section:", { sectionId, field, value })
+    setSections((prevSections) => {
+      const updated = prevSections.map((section) => 
+        section.id === sectionId ? { ...section, [field]: value } : section
+      )
+      console.log("Updated sections:", updated)
+      return updated
+    })
   }
 
   const removeSection = (sectionId) => {
@@ -200,6 +299,7 @@ export default function ItineraryBuilderPage() {
       }
 
       console.log("Saving sections:", validSections)
+      console.log("Sections with locations:", sections.map(s => ({ id: s.id, title: s.title, location: s.location, coordinates: s.coordinates })))
 
       const response = await fetch(`/api/trips/${params.id}/itinerary`, {
         method: "POST",
@@ -207,7 +307,7 @@ export default function ItineraryBuilderPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          sections: validSections.map((section) => ({
+          itinerary: validSections.map((section) => ({
             ...section,
             startDate: new Date(section.startDate).toISOString(),
             endDate: new Date(section.endDate).toISOString(),
@@ -439,24 +539,41 @@ export default function ItineraryBuilderPage() {
                 <input
                   type="text"
                   placeholder="Search for destinations, cities, or countries..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => searchResults.length > 0 && setShowDropdown(true)}
+                  value={searchStates[section.id] || section.location || ""}
+                  onChange={(e) => handleSearchInputChange(section.id, e.target.value)}
+                  onFocus={() => handleSearchInputFocus(section.id)}
+                  onBlur={handleSearchInputBlur}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
-                {isSearching && (
+                 {section.location && (
+                   <div className="mt-2 text-sm text-gray-600 flex items-center">
+                     <span className="truncate">Selected: {section.location}</span>
+                     <button
+                       type="button"
+                       className="ml-2 text-red-600 hover:text-red-800"
+                       onClick={() => {
+                         updateSection(section.id, "location", "")
+                         updateSection(section.id, "coordinates", null)
+                         setSearchStates(prev => ({ ...prev, [section.id]: "" }))
+                       }}
+                     >
+                       Clear
+                     </button>
+                   </div>
+                 )}
+                {isSearching && activeSearchSection === section.id && (
                   <div className="absolute right-3 top-3">
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600"></div>
                   </div>
                 )}
 
                 {/* Search Results Dropdown */}
-                {showDropdown && searchResults.length > 0 && (
+                {activeSearchSection === section.id && searchResults.length > 0 && (
                   <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-xl shadow-lg max-h-60 overflow-y-auto">
                     {searchResults.map((place) => (
                       <div
                         key={place.id}
-                        onClick={() => selectPlace(place)}
+                            onClick={() => selectPlace(section.id, place)}
                         className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
                       >
                         <div className="flex items-center space-x-3">
@@ -513,7 +630,9 @@ export default function ItineraryBuilderPage() {
               </div>
 
               {/* Click outside to close dropdown */}
-              {showDropdown && <div className="fixed inset-0 z-5" onClick={() => setShowDropdown(false)}></div>}
+              {activeSearchSection === section.id && searchResults.length > 0 && (
+                <div className="fixed inset-0 z-5" onClick={() => setActiveSearchSection(null)}></div>
+              )}
             </div>
 
                     {/* Additional Info for Activities */}
