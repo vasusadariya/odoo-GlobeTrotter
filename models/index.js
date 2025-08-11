@@ -4,9 +4,6 @@ import Stop from './Stop';
 import Activity from './Activity';
 import City from './City';
 import SharedTrip from './SharedTrip';
-import Comment from './Comment';
-import CommunityPost from './CommunityPost';
-import CommunityComment from './CommunityComment';
 
 export {
   User,
@@ -15,7 +12,4 @@ export {
   Activity,
   City,
   SharedTrip,
-  Comment,
-  CommunityPost,
-  CommunityComment
 };
