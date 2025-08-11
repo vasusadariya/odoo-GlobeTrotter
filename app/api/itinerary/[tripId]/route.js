@@ -1,12 +1,21 @@
+// app/api/itinerary/[tripId]/route.js
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
+import Trip from "@/models/Trip";
 import { GoogleGenAI, Type } from "@google/genai";
-import { randomUUID } from "crypto";
+import connectDB from "../../../../lib/mongodb";
 
-// Simulated DB store (replace with your DB logic)
-const fakeDB = new Map();
-
-export async function GET(req) {
+export async function GET(req, { params }) {
   try {
+    await connectDB();
+
+    const { tripId } = params;
+
+    const trip = await Trip.findById(tripId);
+    if (!trip) {
+      return NextResponse.json({ error: "Trip not found" }, { status: 404 });
+    }
+
     const apiKey = process.env.GEMINI_API;
     if (!apiKey) {
       return NextResponse.json(
@@ -15,26 +24,23 @@ export async function GET(req) {
       );
     }
 
-    const { searchParams } = new URL(req.url);
-    const prompt = searchParams.get("prompt");
-    if (!prompt) {
-      return NextResponse.json(
-        { error: "Please provide a prompt using ?prompt=..." },
-        { status: 400 }
-      );
-    }
-
-    const tripId = randomUUID(); // create a new trip ID
-
     const ai = new GoogleGenAI({ apiKey });
+
+    // Prompt for AI
+    const prompt = `
+      Create a detailed itinerary for this trip:
+      Name: ${trip.name}
+      Description: ${trip.description || "N/A"}
+      Start Date: ${trip.startDate}
+      End Date: ${trip.endDate}
+      Destinations: ${trip.destinations.map(d => d.name).join(", ")}
+      Budget Limit: ${trip.budgetLimit || "N/A"} ${trip.currency}
+      Use realistic coordinates, budgets, and descriptions for each item.
+    `;
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: `
-        Based on the following trip request, create a detailed trip itinerary.
-        Trip request: ${prompt}
-        Use realistic dates, budgets, and coordinates.
-      `,
+      contents: prompt,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -56,6 +62,7 @@ export async function GET(req) {
                   "other",
                 ],
               },
+              destinations: { type: Type.ARRAY, items: { type: Type.OBJECT } },
               startDate: { type: Type.STRING },
               endDate: { type: Type.STRING },
               budget: { type: Type.NUMBER },
@@ -74,30 +81,18 @@ export async function GET(req) {
       },
     });
 
-    const itinerary = JSON.parse(response.text);
+    const newItinerary = JSON.parse(response.text);
 
-    // Store trip + itinerary in fake DB
-    fakeDB.set(tripId, {
-      trip: { id: tripId, name: "Generated Trip from AI" },
-      itinerary,
+    // Save to DB
+    trip.itinerary = newItinerary;
+    await trip.save();
+
+    return NextResponse.json({
+      message: "Itinerary updated successfully",
+      trip,
     });
-
-    // Redirect to itinerary view page
-    return NextResponse.redirect(
-      `${req.nextUrl.origin}/trips/${tripId}/itinerary/view`
-    );
   } catch (error) {
-    console.error("Gemini API Error:", error);
+    console.error("Error generating itinerary:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
-
-// This simulates the existing GET itinerary endpoint
-export async function POST(req) {
-  const { tripId } = await req.json();
-  const tripData = fakeDB.get(tripId);
-  if (!tripData) {
-    return NextResponse.json({ error: "Trip not found" }, { status: 404 });
-  }
-  return NextResponse.json(tripData);
 }
