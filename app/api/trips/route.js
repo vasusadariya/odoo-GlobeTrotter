@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "../../../lib/auth"
 import connectDB from "../../../lib/mongodb"
 import Trip from "../../../models/Trip"
+import User from "../../../models/User"
 
 // Force this route to be dynamic
 export const dynamic = "force-dynamic"
@@ -36,6 +37,14 @@ export async function POST(request) {
 
     await connectDB()
 
+    const user = await User.findOne({
+      $or: [{ googleId: session.user.id }, { email: session.user.email }],
+    })
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
+
     // Prepare trip data
     const tripData = {
       name: data.name || `Trip to ${data.destinations[0]?.name}`,
@@ -45,9 +54,11 @@ export async function POST(request) {
       destinations: data.destinations.map((dest) => ({
         name: dest.name,
         country: dest.country,
+        coordinates: dest.coordinates || { lat: null, lng: null },
+        placeId: dest.placeId,
         activities: dest.activities || [],
       })),
-      owner: session.user.id,
+      owner: user._id, // Use the MongoDB _id instead of session.user.id
       privacy: data.privacy || "private",
       status: "draft",
       currency: data.currency || "USD",
@@ -61,7 +72,7 @@ export async function POST(request) {
       },
       travelers: [
         {
-          user: session.user.id,
+          user: user._id, // Use the MongoDB _id instead of session.user.id
           role: "owner",
           joinedAt: new Date(),
         },
@@ -122,8 +133,16 @@ export async function GET(request) {
 
     await connectDB()
 
-    // Build query
-    const query = { owner: session.user.id }
+    const user = await User.findOne({
+      $or: [{ googleId: session.user.id }, { email: session.user.email }],
+    })
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
+
+    // Build query using the MongoDB _id
+    const query = { owner: user._id } // Use the MongoDB _id instead of session.user.id
     if (status) query.status = status
     if (privacy) query.privacy = privacy
 
