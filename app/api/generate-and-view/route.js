@@ -1,9 +1,11 @@
-// app/api/generate/route.js
 import { NextResponse } from "next/server";
 import { GoogleGenAI, Type } from "@google/genai";
 import { randomUUID } from "crypto";
 
-export async function POST(req) {
+// Simulated DB store (replace with your DB logic)
+const fakeDB = new Map();
+
+export async function GET(req) {
   try {
     const apiKey = process.env.GEMINI_API;
     if (!apiKey) {
@@ -13,10 +15,16 @@ export async function POST(req) {
       );
     }
 
-    const { prompt } = await req.json();
+    const { searchParams } = new URL(req.url);
+    const prompt = searchParams.get("prompt");
     if (!prompt) {
-      return NextResponse.json({ error: "Missing trip prompt" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Please provide a prompt using ?prompt=..." },
+        { status: 400 }
+      );
     }
+
+    const tripId = randomUUID(); // create a new trip ID
 
     const ai = new GoogleGenAI({ apiKey });
 
@@ -61,27 +69,35 @@ export async function POST(req) {
               },
               notes: { type: Type.STRING },
             },
-            propertyOrdering: [
-              "id",
-              "title",
-              "description",
-              "type",
-              "startDate",
-              "endDate",
-              "budget",
-              "location",
-              "coordinates",
-              "notes",
-            ],
           },
         },
       },
     });
 
     const itinerary = JSON.parse(response.text);
-    return NextResponse.json({ itinerary });
+
+    // Store trip + itinerary in fake DB
+    fakeDB.set(tripId, {
+      trip: { id: tripId, name: "Generated Trip from AI" },
+      itinerary,
+    });
+
+    // Redirect to itinerary view page
+    return NextResponse.redirect(
+      `${req.nextUrl.origin}/trips/${tripId}/itinerary/view`
+    );
   } catch (error) {
     console.error("Gemini API Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+}
+
+// This simulates the existing GET itinerary endpoint
+export async function POST(req) {
+  const { tripId } = await req.json();
+  const tripData = fakeDB.get(tripId);
+  if (!tripData) {
+    return NextResponse.json({ error: "Trip not found" }, { status: 404 });
+  }
+  return NextResponse.json(tripData);
 }
