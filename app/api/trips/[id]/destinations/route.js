@@ -81,3 +81,37 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
+
+export async function GET(request, { params }) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = params;
+
+    if (!id) {
+      return NextResponse.json({ error: "Trip ID is required" }, { status: 400 });
+    }
+
+    await connectDB();
+
+    const trip = await Trip.findById(id).select("destinations.coordinates destinations.name destinations.country");
+
+    if (!trip) {
+      return NextResponse.json({ error: "Trip not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      coordinates: trip.destinations.map(dest => ({
+        name: dest.name,
+        country: dest.country,
+        coordinates: dest.coordinates,
+      })),
+    });
+  } catch (error) {
+    console.error("Get coordinates error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
