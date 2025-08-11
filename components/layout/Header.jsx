@@ -45,7 +45,7 @@ export default function Header() {
     if (!navigator.geolocation) {
       setLocation({
         loading: false,
-        error: "Geolocation is not supported by your browser",
+        error: "Geolocation is not supported",
         data: null
       })
       return
@@ -63,52 +63,68 @@ export default function Header() {
 
       const { latitude, longitude } = position.coords
       
-      // Use Nominatim API for reverse geocoding (free, no API key needed)
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
-        {
-          headers: {
-            'Accept-Language': 'en',
-            'User-Agent': 'GlobeTrotter/1.0' // Required by Nominatim ToS
+      try {
+        // Use AbortController to set a timeout for the fetch request
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
+        
+        // Try to get location name from coordinates
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+          {
+            headers: {
+              'Accept-Language': 'en',
+              'User-Agent': 'GlobeTrotter/1.0'
+            },
+            signal: controller.signal
           }
+        )
+        
+        clearTimeout(timeoutId)
+        
+        if (!response.ok) {
+          throw new Error("Geocoding failed")
         }
-      )
-      
-      if (!response.ok) {
-        throw new Error("Geocoding failed")
-      }
-      
-      const data = await response.json()
-      
-      // Extract location information
-      const locationData = {
-        latitude,
-        longitude,
-        city: data.address.city || data.address.town || data.address.village || data.address.county || "Unknown",
-        area: data.address.suburb || data.address.neighbourhood || data.address.road || "",
-        country: data.address.country,
-        timestamp: new Date().getTime()
-      }
-      
-      // Store in localStorage
-      localStorage.setItem("userLocation", JSON.stringify(locationData))
-      
-      // Update state
-      setLocation({
-        loading: false,
-        error: null,
-        data: locationData
-      })
-      
-      // If user is logged in, update location in backend
-      if (session?.user) {
-        updateLocationInBackend(latitude, longitude, locationData)
+        
+        const data = await response.json()
+        
+        // Extract location information
+        const locationData = {
+          latitude,
+          longitude,
+          city: data.address.city || data.address.town || data.address.village || data.address.county || "Unknown",
+          area: data.address.suburb || data.address.neighbourhood || data.address.road || "",
+          timestamp: new Date().getTime()
+        }
+        
+        // Store in localStorage
+        localStorage.setItem("userLocation", JSON.stringify(locationData))
+        
+        // Update state
+        setLocation({
+          loading: false,
+          error: null,
+          data: locationData
+        })
+        
+        // If user is logged in, update location in backend
+        if (session?.user) {
+          updateLocationInBackend(latitude, longitude, locationData)
+        }
+      } catch (error) {
+        console.error("Geocoding error:", error)
+        
+        setLocation({
+          loading: false,
+          error: "Location unavailable",
+          data: null
+        })
       }
     } catch (error) {
       console.error("Location error:", error)
       setLocation({
         loading: false,
-        error: error.message || "Failed to get location",
+        error: "Location access denied",
         data: null
       })
     }
@@ -126,8 +142,7 @@ export default function Header() {
           latitude,
           longitude,
           city: locationData.city,
-          area: locationData.area,
-          country: locationData.country
+          area: locationData.area
         })
       })
     } catch (error) {
@@ -341,7 +356,7 @@ export default function Header() {
               {location.loading ? (
                 <span className="animate-pulse">Locating...</span>
               ) : location.error ? (
-                <span className="text-red-500">Enable location</span>
+                <span className="text-red-500">{location.error}</span>
               ) : location.data ? (
                 <span>
                   {location.data.area ? `${location.data.area}, ` : ''}
