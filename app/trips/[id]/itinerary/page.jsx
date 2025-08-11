@@ -217,9 +217,9 @@ export default function ItineraryBuilderPage() {
         throw new Error(responseData.error || "Failed to save itinerary")
       }
 
-      // Show success and redirect
+      // Show success and redirect to dashboard
       alert("Itinerary saved successfully!")
-      router.push(`/trips/${params.id}`)
+      router.push("/dashboard")
     } catch (error) {
       console.error("Save error:", error)
       setError(error.message)
@@ -488,6 +488,11 @@ export default function ItineraryBuilderPage() {
               </Link>
 
               <div className="flex space-x-4">
+                <Link href={`/trips/${params.id}/itinerary/view`}>
+                  <Button variant="outline" disabled={sections.length === 0}>
+                    View Itinerary
+                  </Button>
+                </Link>
                 <Button
                   onClick={saveItinerary}
                   loading={isSaving}

@@ -1,47 +1,161 @@
 "use client"
-
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
-import Button from "../components/ui/Button_1"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Plane, MapPin, Calendar, Users, Star, ArrowRight, Sparkles, Globe, Camera, Heart } from "lucide-react"
 
 export default function HomePage() {
   const { data: session, status } = useSession()
+  const [isVisible, setIsVisible] = useState(false)
+  const [currentTestimonial, setCurrentTestimonial] = useState(0)
+
+  useEffect(() => {
+    setIsVisible(true)
+    const interval = setInterval(() => {
+      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length)
+    }, 4000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const testimonials = [
+    {
+      name: "Sarah Chen",
+      location: "San Francisco, CA",
+      text: "GlobeTrotter made planning my 3-week European adventure so easy! The AI suggestions were spot-on.",
+      avatar: "🌟",
+      rating: 5,
+    },
+    {
+      name: "Marcus Johnson",
+      location: "New York, NY",
+      text: "Best travel planning app I've ever used. The budget tracking saved me hundreds of dollars!",
+      avatar: "✈️",
+      rating: 5,
+    },
+    {
+      name: "Elena Rodriguez",
+      location: "Barcelona, Spain",
+      text: "The collaborative features helped me plan the perfect group trip with friends across 4 countries.",
+      avatar: "🗺️",
+      rating: 5,
+    },
+  ]
+
+  const features = [
+    {
+      icon: <MapPin className="w-8 h-8" />,
+      title: "Smart Itineraries",
+      description: "AI-powered trip planning that adapts to your preferences and budget",
+      color: "from-blue-500 to-cyan-500",
+      delay: "delay-100",
+    },
+    {
+      icon: <Calendar className="w-8 h-8" />,
+      title: "Visual Timeline",
+      description: "Beautiful calendar views and interactive timeline planning",
+      color: "from-purple-500 to-pink-500",
+      delay: "delay-200",
+    },
+    {
+      icon: <Users className="w-8 h-8" />,
+      title: "Collaborative Planning",
+      description: "Plan together with friends and family in real-time",
+      color: "from-green-500 to-emerald-500",
+      delay: "delay-300",
+    },
+    {
+      icon: <Star className="w-8 h-8" />,
+      title: "Local Insights",
+      description: "Discover hidden gems and local recommendations",
+      color: "from-orange-500 to-red-500",
+      delay: "delay-400",
+    },
+    {
+      icon: <Globe className="w-8 h-8" />,
+      title: "Global Coverage",
+      description: "Plan trips to 195+ countries with local expertise",
+      color: "from-indigo-500 to-purple-500",
+      delay: "delay-500",
+    },
+    {
+      icon: <Camera className="w-8 h-8" />,
+      title: "Memory Keeper",
+      description: "Capture and organize your travel memories beautifully",
+      color: "from-pink-500 to-rose-500",
+      delay: "delay-600",
+    },
+  ]
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
+            <Sparkles className="w-6 h-6 text-blue-600 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+          </div>
+          <p className="mt-4 text-gray-600 animate-pulse">Preparing your adventure...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-pink-400/20 to-orange-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-green-400/10 to-blue-400/10 rounded-full blur-3xl animate-pulse delay-2000"></div>
+      </div>
       {/* Hero Section */}
-      <div className="relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
-          <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-              Plan Your Perfect
-              <span className="text-primary-600"> Adventure</span>
+      <section className="relative pt-20 pb-32">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div
+            className={`text-center transform transition-all duration-1000 ${isVisible ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"}`}
+          >
+            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-100 to-purple-100 backdrop-blur-sm rounded-full px-6 py-2 mb-8 border border-white/20">
+              <Sparkles className="w-4 h-4 text-blue-600 animate-pulse" />
+              <span className="text-sm font-medium text-gray-700">AI-Powered Travel Planning</span>
+            </div>
+
+            <h1 className="text-5xl md:text-7xl font-bold mb-8 leading-tight">
+              <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent animate-pulse">
+                Plan Your Perfect
+              </span>
+              <br />
+              <span className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 bg-clip-text text-transparent">
+                Adventure
+              </span>
             </h1>
-            <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Create customized multi-city itineraries, assign travel dates and activities, discover destinations
-              through intelligent search, and share your plans with the world.
+
+            <p className="text-xl md:text-2xl text-gray-600 mb-12 max-w-4xl mx-auto leading-relaxed">
+              Create magical journeys with AI-powered itineraries, discover hidden gems, and share unforgettable
+              experiences with fellow travelers around the world.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+
+            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
               {session ? (
                 <>
                   <Link href="/dashboard">
-                    <Button size="lg" className="w-full sm:w-auto">
+                    <Button
+                      size="lg"
+                      className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl text-lg px-8 py-4 rounded-2xl"
+                    >
+                      <Plane className="w-5 h-5 mr-2 animate-bounce" />
                       Go to Dashboard
                     </Button>
                   </Link>
                   <Link href="/trips/create">
-                    <Button variant="outline" size="lg" className="w-full sm:w-auto bg-transparent">
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="w-full sm:w-auto backdrop-blur-sm bg-white/50 border-white/30 hover:bg-white/70 transform hover:scale-105 transition-all duration-300 text-lg px-8 py-4 rounded-2xl"
+                    >
+                      <MapPin className="w-5 h-5 mr-2" />
                       Create New Trip
                     </Button>
                   </Link>
@@ -49,12 +163,21 @@ export default function HomePage() {
               ) : (
                 <>
                   <Link href="/auth/register">
-                    <Button size="lg" className="w-full sm:w-auto">
+                    <Button
+                      size="lg"
+                      className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl text-lg px-8 py-4 rounded-2xl group"
+                    >
+                      <Sparkles className="w-5 h-5 mr-2 group-hover:animate-spin" />
                       Start Planning Now
+                      <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                     </Button>
                   </Link>
                   <Link href="/auth/login">
-                    <Button variant="outline" size="lg" className="w-full sm:w-auto bg-transparent">
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="w-full sm:w-auto backdrop-blur-sm bg-white/50 border-white/30 hover:bg-white/70 transform hover:scale-105 transition-all duration-300 text-lg px-8 py-4 rounded-2xl"
+                    >
                       Sign In
                     </Button>
                   </Link>
@@ -63,146 +186,165 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Features Section */}
-      <div className="bg-white py-16">
+      <section className="py-24 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Everything you need to plan the perfect trip</h2>
-            <p className="text-xl text-gray-600">Comprehensive travel planning made simple</p>
+          <div className="text-center mb-20">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+              Everything You Need for Epic Adventures
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Comprehensive travel planning tools designed to make your journey unforgettable
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Feature 1 */}
-            <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100">
-              <div className="w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m0 11V9m0 0L9 7"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Custom Itineraries</h3>
-              <p className="text-gray-600">
-                Create personalized multi-city travel plans with dates, activities, and budgets.
-              </p>
-            </div>
+            {features.map((feature, index) => (
+              <Card
+                key={index}
+                className={`group hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 backdrop-blur-sm bg-white/70 border-white/20 overflow-hidden animate-fade-in-up ${feature.delay}`}
+              >
+                <CardContent className="p-8 relative">
+                  <div
+                    className="absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-10 transition-opacity duration-500"
+                    style={{
+                      backgroundImage: `linear-gradient(135deg, ${feature.color.split(" ")[1]}, ${feature.color.split(" ")[3]})`,
+                    }}
+                  ></div>
 
-            {/* Feature 2 */}
-            <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-green-50 to-green-100">
-              <div className="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Smart Discovery</h3>
-              <p className="text-gray-600">
-                Find activities and destinations through intelligent search and recommendations.
-              </p>
-            </div>
+                  <div
+                    className={`w-16 h-16 bg-gradient-to-br ${feature.color} rounded-2xl flex items-center justify-center mb-6 text-white transform group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg`}
+                  >
+                    {feature.icon}
+                  </div>
 
-            {/* Feature 3 */}
-            <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-purple-50 to-purple-100">
-              <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Budget Tracking</h3>
-              <p className="text-gray-600">Get cost breakdowns and visual calendars to manage your travel expenses.</p>
-            </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-4 group-hover:text-blue-600 transition-colors">
+                    {feature.title}
+                  </h3>
 
-            {/* Feature 4 */}
-            <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-orange-50 to-orange-100">
-              <div className="w-12 h-12 bg-orange-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Visual Calendars</h3>
-              <p className="text-gray-600">View your trip timeline in beautiful calendar and timeline formats.</p>
-            </div>
+                  <p className="text-gray-600 leading-relaxed">{feature.description}</p>
 
-            {/* Feature 5 */}
-            <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-pink-50 to-pink-100">
-              <div className="w-12 h-12 bg-pink-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Share & Connect</h3>
-              <p className="text-gray-600">
-                Share your travel plans publicly or with friends for inspiration and collaboration.
-              </p>
-            </div>
+                  <div className="mt-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <ArrowRight className="w-5 h-5 text-blue-600 transform group-hover:translate-x-2 transition-transform" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
 
-            {/* Feature 6 */}
-            <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-indigo-50 to-indigo-100">
-              <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Smart Interface</h3>
-              <p className="text-gray-600">
-                Dynamic user interfaces that adapt to each user&apos;s trip flow and preferences.
-              </p>
+      {/* Testimonials Section */}
+      <section className="py-24 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-purple-600/5 backdrop-blur-3xl"></div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+              Loved by Travelers Worldwide
+            </h2>
+            <p className="text-xl text-gray-600">Join thousands of happy adventurers</p>
+          </div>
+
+          <div className="relative max-w-4xl mx-auto">
+            <Card className="backdrop-blur-sm bg-white/80 border-white/20 shadow-2xl overflow-hidden">
+              <CardContent className="p-12 text-center">
+                <div className="flex justify-center mb-6">
+                  {[...Array(testimonials[currentTestimonial].rating)].map((_, i) => (
+                    <Star
+                      key={i}
+                      className="w-6 h-6 text-yellow-400 fill-current animate-pulse"
+                      style={{ animationDelay: `${i * 100}ms` }}
+                    />
+                  ))}
+                </div>
+
+                <blockquote className="text-2xl md:text-3xl font-medium text-gray-900 mb-8 leading-relaxed">
+                  "{testimonials[currentTestimonial].text}"
+                </blockquote>
+
+                <div className="flex items-center justify-center space-x-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-2xl">
+                    {testimonials[currentTestimonial].avatar}
+                  </div>
+                  <div className="text-left">
+                    <div className="font-bold text-gray-900">{testimonials[currentTestimonial].name}</div>
+                    <div className="text-gray-600">{testimonials[currentTestimonial].location}</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="flex justify-center mt-8 space-x-2">
+              {testimonials.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentTestimonial(index)}
+                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                    index === currentTestimonial ? "bg-blue-600 scale-125" : "bg-gray-300 hover:bg-gray-400"
+                  }`}
+                />
+              ))}
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* CTA Section */}
-      <div className="bg-primary-600 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">Ready to start your adventure?</h2>
-          <p className="text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
-            Join thousands of travelers who trust GlobeTrotter to plan their perfect trips.
+      <section className="py-24 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600"></div>
+        <div className="absolute inset-0 bg-black/20"></div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative text-center text-white">
+          <div className="inline-flex items-center space-x-2 bg-white/20 backdrop-blur-sm rounded-full px-6 py-2 mb-8">
+            <Heart className="w-4 h-4 text-pink-300 animate-pulse" />
+            <span className="text-sm font-medium">Join 50,000+ Happy Travelers</span>
+          </div>
+
+          <h2 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+            Ready to Start Your
+            <br />
+            <span className="bg-gradient-to-r from-yellow-300 to-pink-300 bg-clip-text text-transparent">
+              Dream Adventure?
+            </span>
+          </h2>
+
+          <p className="text-xl md:text-2xl mb-12 max-w-3xl mx-auto opacity-90 leading-relaxed">
+            Join thousands of travelers who trust GlobeTrotter to plan their perfect journeys. Your next adventure is
+            just one click away!
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+
+          <div className="flex flex-col sm:flex-row gap-6 justify-center">
             {session ? (
               <Link href="/trips/create">
-                <Button size="lg" className="w-full sm:w-auto bg-white text-primary-600 hover:bg-gray-50">
+                <Button
+                  size="lg"
+                  className="w-full sm:w-auto bg-white text-blue-600 hover:bg-gray-100 transform hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl text-lg px-8 py-4 rounded-2xl group"
+                >
+                  <Plane className="w-5 h-5 mr-2 group-hover:animate-bounce" />
                   Create Your First Trip
+                  <Sparkles className="w-5 h-5 ml-2 group-hover:animate-spin" />
                 </Button>
               </Link>
             ) : (
               <>
                 <Link href="/auth/register">
-                  <Button size="lg" className="w-full sm:w-auto bg-white text-primary-600 hover:bg-gray-50">
+                  <Button
+                    size="lg"
+                    className="w-full sm:w-auto bg-white text-blue-600 hover:bg-gray-100 transform hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl text-lg px-8 py-4 rounded-2xl group"
+                  >
+                    <Sparkles className="w-5 h-5 mr-2 group-hover:animate-spin" />
                     Get Started Free
+                    <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
                 <Link href="/public-trips">
                   <Button
                     variant="outline"
                     size="lg"
-                    className="w-full sm:w-auto border-white text-white hover:bg-white hover:text-primary-600 bg-transparent"
+                    className="w-full sm:w-auto border-white/30 text-white hover:bg-white/10 backdrop-blur-sm transform hover:scale-105 transition-all duration-300 text-lg px-8 py-4 rounded-2xl bg-transparent"
                   >
+                    <Globe className="w-5 h-5 mr-2" />
                     Explore Public Trips
                   </Button>
                 </Link>
@@ -210,101 +352,76 @@ export default function HomePage() {
             )}
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            {/* Company Info */}
+      <footer className="bg-gray-900 text-white py-16 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/20 to-purple-900/20"></div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
             <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center">
-                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM4.332 8.027a6.012 6.012 0 011.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 019 7.5V8a2 2 0 004 0 2 2 0 011.523-1.943A5.977 5.977 0 0116 10c0 .34-.028.675-.083 1H15a2 2 0 00-2 2v2.197A5.973 5.973 0 0110 16v-2a2 2 0 00-2-2 2 2 0 01-2-2 2 2 0 00-1.668-1.973z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+              <div className="flex items-center space-x-3 mb-6 group">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300">
+                  <Globe className="w-6 h-6 text-white" />
                 </div>
-                <span className="text-xl font-bold">GlobeTrotter</span>
+                <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                  GlobeTrotter
+                </span>
               </div>
-              <p className="text-gray-400 mb-4 max-w-md">
+              <p className="text-gray-400 mb-6 max-w-md leading-relaxed">
                 Empowering travelers to create unforgettable journeys through intelligent trip planning and seamless
-                itinerary management.
+                itinerary management. Your adventure starts here.
               </p>
               <div className="flex space-x-4">
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M22.46 6c-.77.35-1.6.58-2.46.69.88-.53 1.56-1.37 1.88-2.38-.83.5-1.75.85-2.72 1.05C18.37 4.5 17.26 4 16 4c-2.35 0-4.27 1.92-4.27 4.29 0 .34.04.67.11.98C8.28 9.09 5.11 7.38 3 4.79c-.37.63-.58 1.37-.58 2.15 0 1.49.75 2.81 1.91 3.56-.71 0-1.37-.2-1.95-.5v.03c0 2.08 1.48 3.82 3.44 4.21a4.22 4.22 0 0 1-1.93.07 4.28 4.28 0 0 0 4 2.98 8.521 8.521 0 0 1-5.33 1.84c-.34 0-.68-.02-1.02-.06C3.44 20.29 5.7 21 8.12 21 16 21 20.33 14.46 20.33 8.79c0-.19 0-.37-.01-.56.84-.6 1.56-1.36 2.14-2.23z" />
-                  </svg>
-                </a>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.174-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.663.967-2.911 2.168-2.911 1.024 0 1.518.769 1.518 1.688 0 1.029-.653 2.567-.992 3.992-.285 1.193.6 2.165 1.775 2.165 2.128 0 3.768-2.245 3.768-5.487 0-2.861-2.063-4.869-5.008-4.869-3.41 0-5.409 2.562-5.409 5.199 0 1.033.394 2.143.889 2.741.099.12.112.225.085.345-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.402.165-1.495-.69-2.433-2.878-2.433-4.646 0-3.776 2.748-7.252 7.92-7.252 4.158 0 7.392 2.967 7.392 6.923 0 4.135-2.607 7.462-6.233 7.462-1.214 0-2.357-.629-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24.009 12.017 24.009c6.624 0 11.99-5.367 11.99-11.988C24.007 5.367 18.641.001.012.001z.017 0z" />
-                  </svg>
-                </a>
+                {["twitter", "facebook", "instagram", "linkedin"].map((social) => (
+                  <a
+                    key={social}
+                    href="#"
+                    className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-gradient-to-r hover:from-blue-600 hover:to-purple-600 transform hover:scale-110 transition-all duration-300"
+                  >
+                    <div className="w-5 h-5 bg-gray-400 rounded"></div>
+                  </a>
+                ))}
               </div>
             </div>
 
-            {/* Quick Links */}
             <div>
-              <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
-              <ul className="space-y-2">
-                <li>
-                  <Link href="/search/cities" className="text-gray-400 hover:text-white transition-colors">
-                    Explore Destinations
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/public-trips" className="text-gray-400 hover:text-white transition-colors">
-                    Public Trips
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/trips/create" className="text-gray-400 hover:text-white transition-colors">
-                    Create Trip
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors">
-                    My Dashboard
-                  </Link>
-                </li>
+              <h3 className="text-lg font-semibold mb-6 text-white">Quick Links</h3>
+              <ul className="space-y-3">
+                {["Explore Destinations", "Public Trips", "Create Trip", "My Dashboard"].map((link) => (
+                  <li key={link}>
+                    <a
+                      href="#"
+                      className="text-gray-400 hover:text-white transition-colors duration-300 hover:translate-x-1 transform inline-block"
+                    >
+                      {link}
+                    </a>
+                  </li>
+                ))}
               </ul>
             </div>
 
-            {/* Support */}
             <div>
-              <h3 className="text-lg font-semibold mb-4">Support</h3>
-              <ul className="space-y-2">
-                <li>
-                  <Link href="/help" className="text-gray-400 hover:text-white transition-colors">
-                    Help Center
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/contact" className="text-gray-400 hover:text-white transition-colors">
-                    Contact Us
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/privacy" className="text-gray-400 hover:text-white transition-colors">
-                    Privacy Policy
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/terms" className="text-gray-400 hover:text-white transition-colors">
-                    Terms of Service
-                  </Link>
-                </li>
+              <h3 className="text-lg font-semibold mb-6 text-white">Support</h3>
+              <ul className="space-y-3">
+                {["Help Center", "Contact Us", "Privacy Policy", "Terms of Service"].map((link) => (
+                  <li key={link}>
+                    <a
+                      href="#"
+                      className="text-gray-400 hover:text-white transition-colors duration-300 hover:translate-x-1 transform inline-block"
+                    >
+                      {link}
+                    </a>
+                  </li>
+                ))}
               </ul>
             </div>
           </div>
 
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center">
-            <p className="text-gray-400">© 2025 GlobeTrotter. All rights reserved. Built for the Odoo Hackathon.</p>
+          <div className="border-t border-gray-800 mt-12 pt-8 text-center">
+            <p className="text-gray-400">
+              © 2025 GlobeTrotter. All rights reserved. Built with ❤️ for the Odoo Hackathon.
+            </p>
           </div>
         </div>
       </footer>
