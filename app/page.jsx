@@ -1,73 +1,162 @@
 "use client"
 
 import Link from "next/link"
-import Button from "../components/ui/Button_1"
-import { useState,useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Image from "next/image"
 import TopRegionalCities from "../components/TopRegionalCities"
+import { motion } from "framer-motion"
+import { Plane, X, Search } from "lucide-react"
+import Footer from "../components/Footer"
+import dynamic from "next/dynamic"
+
+const WorldMap = dynamic(() => import("../components/ui/WorldMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full aspect-[2/1] bg-gray-100 rounded-lg animate-pulse"></div>
+  ),
+})
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("")
-const [searchResults, setSearchResults] = useState([])
-const [isSearching, setIsSearching] = useState(false)
-const [showResults, setShowResults] = useState(false)
+  const [searchResults, setSearchResults] = useState([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [showResults, setShowResults] = useState(false)
+
+  // Filter and sort states
+  const [showFilters, setShowFilters] = useState(false)
+  const [sortOption, setSortOption] = useState("popular") // popular, alphabetical, recent
+
+  // Filter options state
+  const [filterOptions, setFilterOptions] = useState({
+    continents: [],
+    costLevel: null,
+    travelStyle: null
+  })
+
+  const continentOptions = ["Asia", "Europe", "North America", "South America", "Africa", "Oceania"]
+  const costOptions = ["Budget", "Moderate", "Luxury"]
+  const travelStyleOptions = ["Adventure", "Relaxation", "Cultural", "Family", "Solo"]
 
   function useDebounce(value, delay) {
-  const [debouncedValue, setDebouncedValue] = useState(value)
+    const [debouncedValue, setDebouncedValue] = useState(value)
 
+    useEffect(() => {
+      const handler = setTimeout(() => {
+        setDebouncedValue(value)
+      }, delay)
+
+      return () => {
+        clearTimeout(handler)
+      }
+    }, [value, delay])
+
+    return debouncedValue
+  }
+
+  const debouncedSearchQuery = useDebounce(searchQuery, 400)
+
+  const searchDestinations = useCallback(async (query) => {
+    if (!query || query.length < 2) {
+      setSearchResults([])
+      setShowResults(false)
+      return
+    }
+
+    setIsSearching(true)
+    try {
+      // Add filter and sort parameters to the API call
+      let apiUrl = `/api/destinations/top?search=${encodeURIComponent(query)}&limit=6`
+
+      // Add sort parameter
+      if (sortOption) {
+        apiUrl += `&sort=${sortOption}`
+      }
+
+      // Add filter parameters
+      if (filterOptions.continents.length > 0) {
+        apiUrl += `&continents=${filterOptions.continents.join(',')}`
+      }
+
+      if (filterOptions.costLevel) {
+        apiUrl += `&cost=${filterOptions.costLevel}`
+      }
+
+      if (filterOptions.travelStyle) {
+        apiUrl += `&style=${filterOptions.travelStyle}`
+      }
+
+      const response = await fetch(apiUrl)
+      if (!response.ok) {
+        throw new Error('Search failed')
+      }
+
+      const data = await response.json()
+      setSearchResults(data.destinations || [])
+      setShowResults(true)
+    } catch (error) {
+      console.error("Search error:", error)
+      setSearchResults([])
+    } finally {
+      setIsSearching(false)
+    }
+  }, [sortOption, filterOptions])
+
+  // Effect to trigger search when debounced query changes
   useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value)
-    }, delay)
+    searchDestinations(debouncedSearchQuery)
+  }, [debouncedSearchQuery, searchDestinations])
 
-    return () => {
-      clearTimeout(handler)
+  // Add a function to handle search form submission
+  const handleSearchSubmit = (e) => {
+    e.preventDefault()
+    if (searchQuery.trim().length >= 2) {
+      window.location.href = `/search/cities?q=${encodeURIComponent(searchQuery)}`
     }
-  }, [value, delay])
-
-  return debouncedValue
-}
-
-const debouncedSearchQuery = useDebounce(searchQuery, 400)
-
-const searchDestinations = useCallback(async (query) => {
-  if (!query || query.length < 2) {
-    setSearchResults([])
-    setShowResults(false)
-    return
   }
 
-  setIsSearching(true)
-  try {
-    const response = await fetch(`/api/destinations/top?search=${encodeURIComponent(query)}&limit=6`)
-    if (!response.ok) {
-      throw new Error('Search failed')
-    }
+  // Handle filter toggles
+  const toggleContinent = (continent) => {
+    setFilterOptions(prev => {
+      const newContinents = prev.continents.includes(continent)
+        ? prev.continents.filter(c => c !== continent)
+        : [...prev.continents, continent]
 
-    const data = await response.json()
-    setSearchResults(data.destinations || [])
-    setShowResults(true)
-  } catch (error) {
-    console.error("Search error:", error)
-    setSearchResults([])
-  } finally {
-    setIsSearching(false)
+      return {
+        ...prev,
+        continents: newContinents
+      }
+    })
   }
-}, [])
 
-// Effect to trigger search when debounced query changes
-useEffect(() => {
-  searchDestinations(debouncedSearchQuery)
-}, [debouncedSearchQuery, searchDestinations])
-
-// Add a function to handle search form submission
-const handleSearchSubmit = (e) => {
-  e.preventDefault()
-  if (searchQuery.trim().length >= 2) {
-    window.location.href = `/search/cities?q=${encodeURIComponent(searchQuery)}`
+  const setCostLevel = (cost) => {
+    setFilterOptions(prev => ({
+      ...prev,
+      costLevel: prev.costLevel === cost ? null : cost
+    }))
   }
-}
 
+  const setTravelStyle = (style) => {
+    setFilterOptions(prev => ({
+      ...prev,
+      travelStyle: prev.travelStyle === style ? null : style
+    }))
+  }
+
+  // Reset all filters
+  const resetFilters = () => {
+    setFilterOptions({
+      continents: [],
+      costLevel: null,
+      travelStyle: null
+    })
+    setSortOption("popular")
+  }
+
+  // Check if any filters are applied
+  const hasActiveFilters = filterOptions.continents.length > 0 ||
+    filterOptions.costLevel !== null ||
+    filterOptions.travelStyle !== null ||
+    sortOption !== "popular"
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -75,9 +164,9 @@ const handleSearchSubmit = (e) => {
       <div className="relative h-screen w-full overflow-hidden px-4 sm:px-6 lg:px-8 pt-8 pb-12">
         {/* Image Background with overlay - curved borders */}
         <div className="absolute inset-0 w-full h-full rounded-3xl overflow-hidden mt-2 mx-auto max-w-6xl shadow-3xl">
-          <Image 
-            src="/hero-travel.jpg" 
-            alt="Travel Landscape" 
+          <Image
+            src="/hero-travel.jpg"
+            alt="Travel Landscape"
             fill
             priority
             className="object-cover"
@@ -98,373 +187,266 @@ const handleSearchSubmit = (e) => {
             </p>
             <div className="flex justify-center mt-4">
               <Link href="/trips/create">
-                <Button size="lg" className="bg-white text-primary-600 hover:bg-gray-50 shadow-lg px-8 py-3 text-lg rounded-full">
-                  Book Now
-                </Button>
+                <motion.button
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  transition={{ duration: 0.1, delay: 0.1 }}
+                  className="group relative inline-flex items-center mt-3 gap-1.5 sm:gap-2 overflow-hidden rounded-full border border-white px-4 py-2 sm:px-5 sm:py-3 md:px-6 md:py-3 text-xs sm:text-sm md:text-base font-medium text-white transition-transform"
+                >
+                  <span className="relative z-10 transition-colors duration-500 group-hover:text-black">
+                    Book Now
+                  </span>
+                  <span className="relative z-10 flex items-center justify-center">
+                    <span className="flex h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 bg-black items-center justify-center rounded-full transition-colors duration-500 group-hover:border-black">
+                      <Plane className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 transition-transform duration-300 group-hover:translate-x-2" />
+                    </span>
+                  </span>
+                  <div className="absolute left-0 top-0 h-full w-full -translate-x-full transform bg-white transition-transform duration-500 group-hover:translate-x-0" />
+                </motion.button>
               </Link>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Search Section */}
-<div className="bg-white py-8 shadow-md relative">
-  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <form onSubmit={handleSearchSubmit} className="flex flex-col md:flex-row gap-4 items-center justify-between">
-      <div className="w-full md:w-1/2">
-        <div className="relative">
-          <input
-            type="text"
-            className="w-full px-5 py-4 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            placeholder="Search destinations, activities, or experiences..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onFocus={() => searchQuery.length >= 2 && setShowResults(true)}
-          />
-          <button 
-            type="submit"
-            className="absolute right-3 top-1/2 -translate-y-1/2 bg-primary-600 text-white p-2 rounded-full"
-          >
-            {isSearching ? (
-              <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            )}
-          </button>
-          
-          {/* Search Results Dropdown */}
-          {showResults && searchResults.length > 0 && (
-            <div className="absolute z-50 w-full mt-2 bg-white rounded-lg shadow-xl border border-gray-200 max-h-96 overflow-y-auto">
-              <div className="p-3 border-b border-gray-200">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-sm font-medium text-gray-700">Search Results</h3>
-                  <button 
-                    type="button"
-                    onClick={() => setShowResults(false)} 
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+      {/* Search Section - Centered and Styled like TopRegionalCities */}
+      <div className="bg-white py-12 shadow-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Discover Your Next Destination</h2>
+            <p className="text-lg text-gray-600">Search thousands of destinations around the world</p>
+          </div>
+
+          <div className="max-w-3xl mx-auto">
+            <form onSubmit={handleSearchSubmit} className="flex flex-col gap-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  className="w-full px-5 py-4 pl-12 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent shadow-sm"
+                  placeholder="Search destinations, activities, or experiences..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => searchQuery.length >= 2 && setShowResults(true)}
+                />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <button
+                  type="submit"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-primary-600 text-white p-2 rounded-full hover:bg-primary-700 transition-colors"
+                >
+                  {isSearching ? (
+                    <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
-                  </button>
-                </div>
+                  )}
+                </button>
+
+                {/* Search Results Dropdown */}
+                {showResults && searchResults.length > 0 && (
+                  <div className="absolute z-50 w-full mt-2 bg-white rounded-lg shadow-xl border border-gray-200 max-h-96 overflow-y-auto">
+                    <div className="p-3 border-b border-gray-200">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-sm font-medium text-gray-700">Search Results</h3>
+                        <button
+                          type="button"
+                          onClick={() => setShowResults(false)}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <ul className="py-2">
+                      {searchResults.map((destination, index) => (
+                        <li key={index}>
+                          <Link
+                            href={`/search/cities?q=${encodeURIComponent(destination.name)}`}
+                            className="flex items-center px-4 py-3 hover:bg-gray-50"
+                            onClick={() => setShowResults(false)}
+                          >
+                            <div className="h-10 w-10 bg-gray-200 rounded-full overflow-hidden flex-shrink-0 mr-3">
+                              {destination.image ? (
+                                <img
+                                  src={destination.image}
+                                  alt={destination.name}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <div className="h-full w-full flex items-center justify-center bg-primary-100 text-primary-600">
+                                  {destination.name.charAt(0)}
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">{destination.name}</p>
+                              <p className="text-xs text-gray-500">{destination.country} • {destination.count} {destination.count === 1 ? 'Trip' : 'Trips'}</p>
+                            </div>
+                          </Link>
+                        </li>
+                      ))}
+
+                      <li className="px-4 py-2 border-t border-gray-100">
+                        <Link
+                          href={`/search/cities?q=${encodeURIComponent(searchQuery)}`}
+                          className="text-sm text-primary-600 hover:text-primary-800 flex items-center justify-center"
+                          onClick={() => setShowResults(false)}
+                        >
+                          View all results
+                          <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                          </svg>
+                        </Link>
+                      </li>
+                    </ul>
+                  </div>
+                )}
               </div>
-              
-              <ul className="py-2">
-                {searchResults.map((destination, index) => (
-                  <li key={index}>
-                    <Link 
-                      href={`/search/cities?q=${encodeURIComponent(destination.name)}`}
-                      className="flex items-center px-4 py-3 hover:bg-gray-50"
-                      onClick={() => setShowResults(false)}
-                    >
-                      <div className="h-10 w-10 bg-gray-200 rounded-full overflow-hidden flex-shrink-0 mr-3">
-                        {destination.image && (
-                          <img 
-                            src={destination.image} 
-                            alt={destination.name}
-                            className="h-full w-full object-cover"
-                          />
-                        )}
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{destination.name}</p>
-                        <p className="text-xs text-gray-500">{destination.country} • {destination.count} {destination.count === 1 ? 'Trip' : 'Trips'}</p>
-                      </div>
-                    </Link>
-                  </li>
-                ))}
-                
-                <li className="px-4 py-2 border-t border-gray-100">
-                  <Link 
-                    href={`/search/cities?q=${encodeURIComponent(searchQuery)}`}
-                    className="text-sm text-primary-600 hover:text-primary-800 flex items-center justify-center"
-                    onClick={() => setShowResults(false)}
-                  >
-                    View all results
-                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                    </svg>
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          )}
+
+            </form>
+          </div>
         </div>
+
+        {/* Click outside to close results */}
+        {showResults && (
+          <div
+            className="fixed inset-0 z-40 bg-transparent"
+            onClick={() => setShowResults(false)}
+          ></div>
+        )}
       </div>
-      
-      <div className="flex gap-4">
-        <button 
-          type="button"
-          className="px-4 py-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center gap-2"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
-          </svg>
-          Filter
-        </button>
-        <button 
-          type="button"
-          className="px-4 py-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center gap-2"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-          Sort
-        </button>
-      </div>
-    </form>
-  </div>
-  
-  {/* Click outside to close results */}
-  {showResults && (
-    <div 
-      className="fixed inset-0 z-40 bg-transparent" 
-      onClick={() => setShowResults(false)}
-    ></div>
-  )}
-</div>
 
       {/* Top Regional Cities - Using the component */}
       <TopRegionalCities />
-
-      {/* Features Section */}
+      {/* World Map Feature Section */}
       <div className="bg-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Everything you need to plan the perfect trip</h2>
-            <p className="text-xl text-gray-600">Comprehensive travel planning made simple</p>
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-bold text-gray-900 mb-3">Your World, Your Journey</h2>
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+              GlobeTrotter transforms how you plan travel with intelligent tools for multi-city journeys,
+              budget management, and seamless itinerary sharing. Make planning as exciting as the trip itself.
+            </p>
           </div>
+          {/* <div className="mb-12">
+  <WorldMap
+    dots={[
+      {
+        start: { lat: 40.7128, lng: -74.0060 }, // New York
+        end: { lat: 48.8566, lng: 2.3522 }, // Paris
+      },
+      {
+        start: { lat: 48.8566, lng: 2.3522 }, // Paris
+        end: { lat: 41.9028, lng: 12.4964 }, // Rome
+      },
+      {
+        start: { lat: 41.9028, lng: 12.4964 }, // Rome
+        end: { lat: 35.6762, lng: 139.6503 }, // Tokyo
+      },
+      {
+        start: { lat: 35.6762, lng: 139.6503 }, // Tokyo
+        end: { lat: -33.8688, lng: 151.2093 }, // Sydney
+      },
+      {
+        start: { lat: 37.7749, lng: -122.4194 }, // San Francisco
+        end: { lat: 19.4326, lng: -99.1332 }, // Mexico City
+      },
+      {
+        start: { lat: 19.4326, lng: -99.1332 }, // Mexico City
+        end: { lat: -13.1631, lng: -72.5450 }, // Machu Picchu
+      },
+    ]}
+  />
+</div> */}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Features... (rest of your feature sections) */}
-            {/* Feature 1 */}
-            <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100">
-              <div className="w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-10">
+            <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl p-6 shadow-sm">
+              <div className="w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center mb-4">
                 <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m0 11V9m0 0L9 7"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m0 11V9m0 0L9 7" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Custom Itineraries</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Multi-City Itineraries</h3>
               <p className="text-gray-600">
-                Create personalized multi-city travel plans with dates, activities, and budgets.
+                Easily add and manage multiple destinations with flexible durations, visualize your journey on interactive
+                timelines, and organize each stop with precision.
               </p>
             </div>
 
-            {/* Feature 2 */}
-            <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-green-50 to-green-100">
-              <div className="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 shadow-sm">
+              <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mb-4">
                 <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Smart Discovery</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Smart Budget Planning</h3>
               <p className="text-gray-600">
-                Find activities and destinations through intelligent search and recommendations.
+                Take control of your travel finances with automatic budget estimation, expense tracking, and
+                cost-effective recommendations tailored to your preferences.
               </p>
             </div>
 
-            {/* Feature 3 */}
-            <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-purple-50 to-purple-100">
-              <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 shadow-sm">
+              <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center mb-4">
                 <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Budget Tracking</h3>
-              <p className="text-gray-600">Get cost breakdowns and visual calendars to manage your travel expenses.</p>
-            </div>
-
-            {/* Feature 4 */}
-            <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-orange-50 to-orange-100">
-              <div className="w-12 h-12 bg-orange-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Visual Calendars</h3>
-              <p className="text-gray-600">View your trip timeline in beautiful calendar and timeline formats.</p>
-            </div>
-
-            {/* Feature 5 */}
-            <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-pink-50 to-pink-100">
-              <div className="w-12 h-12 bg-pink-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Share & Connect</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Collaborative Sharing</h3>
               <p className="text-gray-600">
-                Share your travel plans publicly or with friends for inspiration and collaboration.
-              </p>
-            </div>
-
-            {/* Feature 6 */}
-            <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-indigo-50 to-indigo-100">
-              <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Smart Interface</h3>
-              <p className="text-gray-600">
-                Dynamic user interfaces that adapt to each user&apos;s trip flow and preferences.
+                Share your detailed trip plans with friends and family, collaborate on group adventures, and
+                discover inspiration from other travelers' journeys.
               </p>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* CTA Section */}
-      <div className="bg-primary-600 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">Ready to start your adventure?</h2>
-          <p className="text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
-            Join thousands of travelers who trust GlobeTrotter to plan their perfect trips.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/auth/register">
-              <Button size="lg" className="w-full sm:w-auto bg-white text-primary-600 hover:bg-gray-50">
-                Get Started Free
-              </Button>
-            </Link>
-            <Link href="/public-trips">
-              <Button
-                variant="outline"
-                size="lg"
-                className="w-full sm:w-auto border-white text-white hover:bg-white hover:text-primary-600 bg-transparent"
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
+            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 shadow-sm">
+              <div className="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Destination Discovery</h3>
+              <p className="text-gray-600">
+                Explore global destinations with personalized recommendations for attractions, activities, and hidden gems.
+                Find the perfect experiences based on your interests and travel style.
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-6 shadow-sm">
+              <div className="w-12 h-12 bg-amber-600 rounded-xl flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Interactive Timeline</h3>
+              <p className="text-gray-600">
+                Visualize your entire journey with interactive timelines and calendars. Get a clear overview of your trip flow and
+                make adjustments with simple drag-and-drop interfaces.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-12 text-center">
+            <Link href="/trips/create">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-8 py-4 bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-full shadow-md hover:shadow-lg text-lg font-medium transition-all duration-200"
               >
-                Explore Public Trips
-              </Button>
+                Start Planning Your Journey
+              </motion.button>
             </Link>
           </div>
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        {/* Footer content (rest of your footer) */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            {/* Company Info */}
-            <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center">
-                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM4.332 8.027a6.012 6.012 0 011.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 019 7.5V8a2 2 0 004 0 2 2 0 011.523-1.943A5.977 5.977 0 0116 10c0 .34-.028.675-.083 1H15a2 2 0 00-2 2v2.197A5.973 5.973 0 0110 16v-2a2 2 0 00-2-2 2 2 0 01-2-2 2 2 0 00-1.668-1.973z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-                <span className="text-xl font-bold">GlobeTrotter</span>
-              </div>
-              <p className="text-gray-400 mb-4 max-w-md">
-                Empowering travelers to create unforgettable journeys through intelligent trip planning and seamless
-                itinerary management.
-              </p>
-              <div className="flex space-x-4">
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M22.46 6c-.77.35-1.6.58-2.46.69.88-.53 1.56-1.37 1.88-2.38-.83.5-1.75.85-2.72 1.05C18.37 4.5 17.26 4 16 4c-2.35 0-4.27 1.92-4.27 4.29 0 .34.04.67.11.98C8.28 9.09 5.11 7.38 3 4.79c-.37.63-.58 1.37-.58 2.15 0 1.49.75 2.81 1.91 3.56-.71 0-1.37-.2-1.95-.5v.03c0 2.08 1.48 3.82 3.44 4.21a4.22 4.22 0 0 1-1.93.07 4.28 4.28 0 0 0 4 2.98 8.521 8.521 0 0 1-5.33 1.84c-.34 0-.68-.02-1.02-.06C3.44 20.29 5.7 21 8.12 21 16 21 20.33 14.46 20.33 8.79c0-.19 0-.37-.01-.56.84-.6 1.56-1.36 2.14-2.23z" />
-                  </svg>
-                </a>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.174-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.663.967-2.911 2.168-2.911 1.024 0 1.518.769 1.518 1.688 0 1.029-.653 2.567-.992 3.992-.285 1.193.6 2.165 1.775 2.165 2.128 0 3.768-2.245 3.768-5.487 0-2.861-2.063-4.869-5.008-4.869-3.41 0-5.409 2.562-5.409 5.199 0 1.033.394 2.143.889 2.741.099.12.112.225.085.345-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.402.165-1.495-.69-2.433-2.878-2.433-4.646 0-3.776 2.748-7.252 7.92-7.252 4.158 0 7.392 2.967 7.392 6.923 0 4.135-2.607 7.462-6.233 7.462-1.214 0-2.357-.629-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24.009 12.017 24.009c6.624 0 11.99-5.367 11.99-11.988C24.007 5.367 18.641.001.012.001z.017 0z" />
-                  </svg>
-                </a>
-              </div>
-            </div>
-
-            {/* Quick Links */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
-              <ul className="space-y-2">
-                <li>
-                  <Link href="/search/cities" className="text-gray-400 hover:text-white transition-colors">
-                    Explore Destinations
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/public-trips" className="text-gray-400 hover:text-white transition-colors">
-                    Public Trips
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/trips/create" className="text-gray-400 hover:text-white transition-colors">
-                    Create Trip
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors">
-                    My Dashboard
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            {/* Support */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Support</h3>
-              <ul className="space-y-2">
-                <li>
-                  <Link href="/help" className="text-gray-400 hover:text-white transition-colors">
-                    Help Center
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/contact" className="text-gray-400 hover:text-white transition-colors">
-                    Contact Us
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/privacy" className="text-gray-400 hover:text-white transition-colors">
-                    Privacy Policy
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/terms" className="text-gray-400 hover:text-white transition-colors">
-                    Terms of Service
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center">
-            <p className="text-gray-400">© 2025 GlobeTrotter. All rights reserved. Built for the Odoo Hackathon.</p>
-          </div>
-        </div>
-      </footer>
+      {/* Footer - Using the new component */}
+      <Footer />
     </div>
   )
 }
