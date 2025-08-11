@@ -15,6 +15,7 @@ const Button = forwardRef(
       secondary: "bg-gray-100 hover:bg-gray-200 text-gray-900 focus:ring-gray-500",
       outline: "border-2 border-primary-600 text-primary-600 hover:bg-primary-50 focus:ring-primary-500",
       ghost: "text-primary-600 hover:bg-primary-50 focus:ring-primary-500",
+      ai: "bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600 hover:from-purple-500 hover:via-blue-500 hover:to-cyan-500 text-white focus:ring-purple-500 shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/40 relative overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-r before:from-white/20 before:via-transparent before:to-transparent before:translate-x-[-100%] hover:before:translate-x-[100%] before:transition-transform before:duration-700",
     }
 
     const sizes = {

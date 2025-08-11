@@ -231,17 +231,17 @@ export default function DashboardPage() {
                                 Build Itinerary
                               </Button>
                             </Link>
+                            
                             <Link href={`/trips/${trip.id}/itinerary/view`}>
                               <Button size="sm" onClick={(e) => e.stopPropagation()}>
                                 View Itinerary
                               </Button>
                             </Link>
-                            <Button size="sm" variant="secondary" onClick={(e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  openModal(trip.id);
-}}
->
+                            <Button size="sm" variant="ai" onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                openModal(trip.id);
+                              }}>
                               Generate Itinerary
                             </Button>
                             <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -18,6 +18,7 @@ export default function ItineraryViewPage() {
   const [viewMode, setViewMode] = useState("flowchart") // flowchart or calendar
   const [selectedDate, setSelectedDate] = useState(null)
   const [showDayModal, setShowDayModal] = useState(false)
+  const [showOptimizeModal, setShowOptimizeModal] = useState(false)
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -239,6 +240,14 @@ export default function ItineraryViewPage() {
     setSelectedDate(null)
   }
 
+  const openOptimizeModal = () => {
+    setShowOptimizeModal(true)
+  }
+
+  const closeOptimizeModal = () => {
+    setShowOptimizeModal(false)
+  }
+
   const totalBudget = itinerary.reduce((total, section) => total + (section.budget || 0), 0)
 
   if (status === "loading" || isLoading) {
@@ -277,7 +286,8 @@ export default function ItineraryViewPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Trip Header */}
@@ -297,8 +307,22 @@ export default function ItineraryViewPage() {
               </div>
             </div>
 
-            {/* View Mode Toggle */}
-            <div className="flex items-center space-x-2 bg-white rounded-xl p-1 shadow-lg border border-gray-200">
+            {/* Optimize Trip Button and View Mode Toggle */}
+            <div className="flex items-center space-x-4">
+              <Button variant="ai" size="md" onClick={openOptimizeModal}>
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                  />
+                </svg>
+                Optimize Trip
+              </Button>
+
+              {/* View Mode Toggle */}
+              <div className="flex items-center space-x-2 bg-white rounded-xl p-1 shadow-lg border border-gray-200">
               <button
                 onClick={() => setViewMode("flowchart")}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -997,6 +1021,108 @@ export default function ItineraryViewPage() {
           </>
         )}
       </div>
-    </div>
+      </div>
+
+      {/* Optimize Trip Modal */}
+      {showOptimizeModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600 text-white p-6 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold">AI Trip Optimizer</h2>
+                    <p className="text-purple-100 text-sm">Enhance your itinerary with AI</p>
+                  </div>
+                </div>
+                <button onClick={closeOptimizeModal} className="text-white hover:text-gray-200 transition-colors">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              <div className="space-y-4">
+                <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-4 border border-purple-200">
+                  <h3 className="font-semibold text-gray-900 mb-2">✨ AI Optimization Features</h3>
+                  <ul className="text-sm text-gray-600 space-y-1">
+                    <li>• Optimize travel routes and timing</li>
+                    <li>• Suggest better activity sequences</li>
+                    <li>• Budget optimization recommendations</li>
+                    <li>• Weather-based activity adjustments</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    What would you like to optimize?
+                  </label>
+                  <textarea
+                    className="w-full border border-gray-300 rounded-lg p-3 text-sm"
+                    rows={3}
+                    placeholder="E.g., 'Minimize travel time between activities', 'Optimize for budget savings', 'Adjust for rainy weather'..."
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white border border-gray-200 rounded-lg p-3 text-center hover:bg-gray-50 cursor-pointer transition-colors">
+                    <div className="text-2xl mb-1">⏱️</div>
+                    <div className="text-xs font-medium text-gray-700">Time</div>
+                  </div>
+                  <div className="bg-white border border-gray-200 rounded-lg p-3 text-center hover:bg-gray-50 cursor-pointer transition-colors">
+                    <div className="text-2xl mb-1">💰</div>
+                    <div className="text-xs font-medium text-gray-700">Budget</div>
+                  </div>
+                  <div className="bg-white border border-gray-200 rounded-lg p-3 text-center hover:bg-gray-50 cursor-pointer transition-colors">
+                    <div className="text-2xl mb-1">🗺️</div>
+                    <div className="text-xs font-medium text-gray-700">Route</div>
+                  </div>
+                  <div className="bg-white border border-gray-200 rounded-lg p-3 text-center hover:bg-gray-50 cursor-pointer transition-colors">
+                    <div className="text-2xl mb-1">🌤️</div>
+                    <div className="text-xs font-medium text-gray-700">Weather</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3 rounded-b-2xl">
+              <button
+                onClick={closeOptimizeModal}
+                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <Button variant="ai" size="sm">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                  />
+                </svg>
+                Optimize Trip
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      </div>
+    </>
   )
 }
