@@ -54,27 +54,45 @@ export default function Header() {
     if (!navigator.geolocation) {
       setLocation({
         loading: false,
-        error: "Geolocation is not supported",
+        error: "Geolocation is not supported by this browser",
         data: null,
       })
       return
     }
 
+    // Check if we have permission
+    if (navigator.permissions && navigator.permissions.query) {
+      try {
+        const permission = await navigator.permissions.query({ name: 'geolocation' })
+        if (permission.state === 'denied') {
+          setLocation({
+            loading: false,
+            error: "Location permission denied. Please enable in browser settings.",
+            data: null,
+          })
+          // Try IP-based location as fallback
+          tryGetLocationFromIP()
+          return
+        }
+      } catch (permissionError) {
+        console.log("Permission check not supported, proceeding with geolocation")
+      }
+    }
+
     try {
       const position = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 5000,
-          maximumAge: 0,
+          enableHighAccuracy: false, // Changed to false for better compatibility
+          timeout: 10000, // Increased timeout to 10 seconds
+          maximumAge: 5 * 60 * 1000, // Allow cached position up to 5 minutes old
         })
       })
 
       const { latitude, longitude } = position.coords
+      console.log("Location obtained:", { latitude, longitude, accuracy: position.coords.accuracy })
 
       try {
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
-
+        // Removed abort controller as it was causing issues
         const response = await fetch(
           `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
           {
@@ -82,17 +100,15 @@ export default function Header() {
               "Accept-Language": "en",
               "User-Agent": "GlobeTrotter/1.0",
             },
-            signal: controller.signal,
           },
         )
 
-        clearTimeout(timeoutId)
-
         if (!response.ok) {
-          throw new Error("Geocoding failed")
+          throw new Error(`Geocoding failed: ${response.status}`)
         }
 
         const data = await response.json()
+        console.log("Geocoding result:", data)
 
         const locationData = {
           latitude,
@@ -100,6 +116,7 @@ export default function Header() {
           city: data.address.city || data.address.town || data.address.village || data.address.county || "Unknown",
           area: data.address.suburb || data.address.neighbourhood || data.address.road || "",
           timestamp: new Date().getTime(),
+          source: "GPS",
         }
 
         localStorage.setItem("userLocation", JSON.stringify(locationData))
@@ -115,20 +132,93 @@ export default function Header() {
         }
       } catch (error) {
         console.error("Geocoding error:", error)
+        
+        // Try fallback geocoding service
+        try {
+          const fallbackResponse = await fetch(
+            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`,
+            {
+              headers: {
+                "Accept": "application/json",
+              },
+            }
+          )
+          
+          if (fallbackResponse.ok) {
+            const fallbackData = await fallbackResponse.json()
+            console.log("Fallback geocoding result:", fallbackData)
+            
+            const locationData = {
+              latitude,
+              longitude,
+              city: fallbackData.city || fallbackData.locality || "Unknown",
+              area: fallbackData.localityInfo?.administrative?.[0]?.name || "",
+              timestamp: new Date().getTime(),
+              source: "GPS",
+            }
+
+            localStorage.setItem("userLocation", JSON.stringify(locationData))
+
+            setLocation({
+              loading: false,
+              error: null,
+              data: locationData,
+            })
+
+            if (session?.user) {
+              updateLocationInBackend(latitude, longitude, locationData)
+            }
+            return
+          }
+        } catch (fallbackError) {
+          console.error("Fallback geocoding also failed:", fallbackError)
+        }
+        
+        // If both geocoding services fail, still save the coordinates
+        const locationData = {
+          latitude,
+          longitude,
+          city: "Unknown",
+          area: "",
+          timestamp: new Date().getTime(),
+          source: "GPS",
+        }
+
+        localStorage.setItem("userLocation", JSON.stringify(locationData))
 
         setLocation({
           loading: false,
-          error: "Location unavailable",
-          data: null,
+          error: "Location saved but address unavailable",
+          data: locationData,
         })
+
+        if (session?.user) {
+          updateLocationInBackend(latitude, longitude, locationData)
+        }
       }
     } catch (error) {
       console.error("Location error:", error)
+      
+      // Handle specific geolocation errors
+      let errorMessage = "Location access denied"
+      if (error.code === 1) {
+        errorMessage = "Location permission denied. Please enable in browser settings."
+      } else if (error.code === 2) {
+        errorMessage = "Location unavailable. Please check your device settings."
+      } else if (error.code === 3) {
+        errorMessage = "Location request timed out. Please try again."
+      }
+      
       setLocation({
         loading: false,
-        error: "Location access denied",
+        error: errorMessage,
         data: null,
       })
+      
+      // If permission denied, try to get location from IP (fallback)
+      if (error.code === 1) {
+        tryGetLocationFromIP()
+      }
     }
   }
 
@@ -148,6 +238,38 @@ export default function Header() {
       })
     } catch (error) {
       console.error("Error updating location in backend:", error)
+    }
+  }
+
+  const tryGetLocationFromIP = async () => {
+    try {
+      const response = await fetch("https://ipapi.co/json/")
+      if (response.ok) {
+        const data = await response.json()
+        
+        const locationData = {
+          latitude: data.latitude,
+          longitude: data.longitude,
+          city: data.city || "Unknown",
+          area: data.region || "",
+          timestamp: new Date().getTime(),
+          source: "IP",
+        }
+
+        localStorage.setItem("userLocation", JSON.stringify(locationData))
+
+        setLocation({
+          loading: false,
+          error: null,
+          data: locationData,
+        })
+
+        if (session?.user) {
+          updateLocationInBackend(locationData.latitude, locationData.longitude, locationData)
+        }
+      }
+    } catch (error) {
+      console.error("IP-based location failed:", error)
     }
   }
 
@@ -234,11 +356,20 @@ export default function Header() {
             {location.loading ? (
               <span className="animate-pulse">Locating...</span>
             ) : location.error ? (
-              <span className="text-red-500">Enable location</span>
+              <span className="text-red-500" title="Click to try again or use IP-based location">
+                {location.error}
+              </span>
             ) : location.data ? (
-              <span>
-                {location.data.area ? `${location.data.area}, ` : ""}
-                {location.data.city}
+              <span title={location.data.source === "IP" ? "Location from IP address" : "GPS location"}>
+                {location.data.city !== "Unknown" ? (
+                  <>
+                    {location.data.area ? `${location.data.area}, ` : ""}
+                    {location.data.city}
+                  </>
+                ) : (
+                  `Coordinates: ${location.data.latitude.toFixed(4)}, ${location.data.longitude.toFixed(4)}`
+                )}
+                {location.data.source === "IP" && <span className="text-xs text-gray-500 ml-1">(IP)</span>}
               </span>
             ) : (
               <span>Get location</span>
@@ -399,11 +530,20 @@ export default function Header() {
               {location.loading ? (
                 <span className="animate-pulse">Locating...</span>
               ) : location.error ? (
-                <span className="text-red-500">{location.error}</span>
+                <span className="text-red-500" title="Click to try again or use IP-based location">
+                  {location.error}
+                </span>
               ) : location.data ? (
-                <span>
-                  {location.data.area ? `${location.data.area}, ` : ""}
-                  {location.data.city}
+                <span title={location.data.source === "IP" ? "Location from IP address" : "GPS location"}>
+                  {location.data.city !== "Unknown" ? (
+                    <>
+                      {location.data.area ? `${location.data.area}, ` : ""}
+                      {location.data.city}
+                    </>
+                  ) : (
+                    `Coordinates: ${location.data.latitude.toFixed(4)}, ${location.data.longitude.toFixed(4)}`
+                  )}
+                  {location.data.source === "IP" && <span className="text-xs text-gray-500 ml-1">(IP)</span>}
                 </span>
               ) : (
                 <span>Get location</span>
