@@ -47,7 +47,7 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/public-trips" className="text-gray-400 hover:text-white transition-colors">
+                <Link href="/community" className="text-gray-400 hover:text-white transition-colors">
                   Public Trips
                 </Link>
               </li>
@@ -62,7 +62,7 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/ai-planner" className="text-gray-400 hover:text-white transition-colors">
+                <Link href="/trips/create" className="text-gray-400 hover:text-white transition-colors">
                   AI Itinerary Builder
                 </Link>
               </li>
@@ -74,22 +74,22 @@ export default function Footer() {
             <h3 className="text-lg font-semibold mb-4">Support</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/help" className="text-gray-400 hover:text-white transition-colors">
+                <Link href="/settings" className="text-gray-400 hover:text-white transition-colors">
                   Help Center
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="text-gray-400 hover:text-white transition-colors">
+                <Link href="/settings" className="text-gray-400 hover:text-white transition-colors">
                   Contact Us
                 </Link>
               </li>
               <li>
-                <Link href="/privacy" className="text-gray-400 hover:text-white transition-colors">
+                <Link href="/settings" className="text-gray-400 hover:text-white transition-colors">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link href="/terms" className="text-gray-400 hover:text-white transition-colors">
+                <Link href="/settings" className="text-gray-400 hover:text-white transition-colors">
                   Terms of Service
                 </Link>
               </li>
