@@ -4,7 +4,7 @@ import Trip from "../../../../../models/Trip";
 
 const OPENWEATHER_KEY = process.env.OPENWEATHER_API_KEY;
 const PLACES_KEY = process.env.GOOGLE_PLACES_API_KEY;
-const GEMINI_KEY = process.env.GEMINI_API_KEY || null;
+const GEMINI_KEY = process.env.GEMINI_API || null;
 
 // Helper: format date to YYYY-MM-DD
 function formatDate(date) {
@@ -185,7 +185,7 @@ async function callGeminiPrompt(prompt) {
   try {
     const mod = await import("@google/generative-ai");
     const { GoogleGenerativeAI } = mod;
-    if (!GEMINI_KEY) throw new Error("GEMINI_API_KEY not set");
+    if (!GEMINI_KEY) throw new Error("GEMINI_API not set");
 
     const genAI = new GoogleGenerativeAI(GEMINI_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
