@@ -998,8 +998,8 @@ export default function ItineraryViewPage() {
         <div>
           <div>
             {/* Weather & AI Suggestions */}
-          <h2 className="text-xl font-semibold mt-32 ">Weather-Based Packing & Activity Suggestions</h2>
-          <WeatherSuggestions tripId={tripId} />
+            <h2 className="text-xl font-semibold mt-32">Weather-Based Packing & Activity Suggestions</h2>
+            <WeatherSuggestions tripId={tripId} />
           </div>
 
           <div>
@@ -1008,26 +1008,25 @@ export default function ItineraryViewPage() {
               <div className="mt-24 grid grid-cols-2 gap-2">
                 <div>
                   <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
-                  <div className="flex items-center justify-between">
-                    
-                    <div>
-                      <div className="text-3xl font-bold">{itinerary.length}</div>
-                      <div className="text-sm opacity-90">Activities</div>
+                    <div className="flex items-center justify-between">
+                      
+                      <div>
+                        <div className="text-3xl font-bold">{itinerary.length}</div>
+                        <div className="text-sm opacity-90">Activities</div>
+                      </div>
+                      
+                      <div className="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13 10V3L4 14h7v7l9-11h-7z"
+                          />
+                        </svg>
+                      </div>
+                      
                     </div>
-                    
-                    <div className="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M13 10V3L4 14h7v7l9-11h-7z"
-                        />
-                      </svg>
-                    
-                    
-                    </div>
-                    
                   </div>
                 </div>
 
@@ -1055,12 +1054,8 @@ export default function ItineraryViewPage() {
                     </div>
                   </div>
                 </div>
-                
-                
-                </div>
 
-                <div>
-                  <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg">
+                <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg">
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-3xl font-bold">
@@ -1102,18 +1097,11 @@ export default function ItineraryViewPage() {
                   </div>
                 </div>
 
-                </div>
-
               </div>
           </div>
         </div>
-
-
       </div>
-
     </div>
-      
-
   )
 }
 
