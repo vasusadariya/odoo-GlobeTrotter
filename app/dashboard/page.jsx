@@ -172,12 +172,12 @@ export default function DashboardPage() {
                 </div>
               </div>
             </Link>
-
+            <Link href="/community">
             <div className="bg-white rounded-2xl p-6 shadow-medium">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Activities</h3>
-                  <p className="text-gray-600">Browse experiences</p>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Community</h3>
+                  <p className="text-gray-600">Browse other&apos;s experiences</p>
                 </div>
                 <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
                   <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -186,6 +186,7 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
+            </Link>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
