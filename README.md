@@ -1,5 +1,5 @@
 # GlobeTrotter - Travel Planning Application
-
+Live Video link ==> https://www.youtube.com/watch?v=Z6XR_HXK9Wg
 A comprehensive travel planning application built with Next.js, MongoDB, and NextAuth.js.
 
 ## Features
