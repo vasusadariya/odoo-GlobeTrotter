@@ -19,6 +19,10 @@ export default function ItineraryViewPage() {
   const [viewMode, setViewMode] = useState("flowchart") // flowchart or calendar
   const [selectedDate, setSelectedDate] = useState(null)
   const [showDayModal, setShowDayModal] = useState(false)
+  const [showOptimizeModal, setShowOptimizeModal] = useState(false)
+  const [isOptimizing, setIsOptimizing] = useState(false)
+  const [optimizationResult, setOptimizationResult] = useState(null)
+  const [isOptimized, setIsOptimized] = useState(false)
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -245,6 +249,70 @@ export default function ItineraryViewPage() {
     setSelectedDate(null)
   }
 
+  const openOptimizeModal = async () => {
+    setShowOptimizeModal(true)
+    setIsOptimizing(true)
+    setOptimizationResult(null)
+    
+    try {
+      const res = await fetch('/api/optimize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          tripId: params.id 
+        })
+      })
+      
+      if (res.ok) {
+        const data = await res.json()
+        setOptimizationResult(data)
+        console.log('Optimization complete:', data)
+        
+        // Don't automatically update itinerary - let user apply changes manually
+      } else {
+        throw new Error('Optimization failed')
+      }
+    } catch (error) {
+      console.error('Error optimizing trip:', error)
+      setOptimizationResult({ error: 'Failed to optimize trip' })
+    } finally {
+      setIsOptimizing(false)
+    }
+  }
+
+  const closeOptimizeModal = () => {
+    setShowOptimizeModal(false)
+    setIsOptimizing(false)
+    setOptimizationResult(null)
+  }
+
+  const applyOptimization = () => {
+    if (optimizationResult && optimizationResult.optimizedItinerary) {
+      setItinerary(optimizationResult.optimizedItinerary)
+    }
+    setIsOptimized(true)
+    closeOptimizeModal()
+  }
+
+  // Calculate the day number based on activity date relative to trip start date
+  const calculateDayNumber = (activityDate) => {
+    if (!trip?.startDate || !activityDate) return 1
+    
+    const tripStart = new Date(trip.startDate)
+    const activityDateObj = new Date(activityDate)
+    
+    // Reset time to start of day for accurate day calculation
+    tripStart.setHours(0, 0, 0, 0)
+    activityDateObj.setHours(0, 0, 0, 0)
+    
+    const timeDiff = activityDateObj.getTime() - tripStart.getTime()
+    const dayDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24))
+    
+    return dayDiff + 1 // Add 1 because Day 1 starts on trip start date
+  }
+
   const totalBudget = itinerary.reduce((total, section) => total + (section.budget || 0), 0)
 
   if (status === "loading" || isLoading) {
@@ -283,6 +351,7 @@ export default function ItineraryViewPage() {
   }
 
   return (
+
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-[65%_35%]">
 
@@ -304,7 +373,9 @@ export default function ItineraryViewPage() {
                     Total Budget: {trip?.currency} {totalBudget.toFixed(2)}
                   </span>
                 </div>
+
               </div>
+
 
               {/* View Mode Toggle */}
               <div className="flex items-center space-x-2 bg-white rounded-xl p-1 shadow-lg border border-gray-200">
@@ -317,10 +388,12 @@ export default function ItineraryViewPage() {
                   }`}
                 >
                   <svg className="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
+
                       d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m0 11V9m0 0L9 7"
                     />
                   </svg>
@@ -345,6 +418,7 @@ export default function ItineraryViewPage() {
                   Calendar
                 </button>
               </div>
+
             </div>
           </div>
 
@@ -435,6 +509,7 @@ export default function ItineraryViewPage() {
                                     className={`w-12 h-12 bg-gradient-to-br ${getTypeColor(section.type)} rounded-xl flex items-center justify-center text-white shadow-md`}
                                   >
                                     {getTypeIcon(section.type)}
+
                                   </div>
 
                                   {/* Day Badge */}
@@ -1035,8 +1110,10 @@ export default function ItineraryViewPage() {
 
 
       </div>
+
     </div>
       
+
   )
 }
 
