@@ -100,6 +100,14 @@ export default function CreateTripPage() {
   const handleCoverImageUpload = (event) => {
     const file = event.target.files[0]
     if (file) {
+      // Check file size (5MB = 5 * 1024 * 1024 bytes)
+      const maxSize = 5 * 1024 * 1024
+      if (file.size > maxSize) {
+        alert("File size must be less than 5MB. Please choose a smaller image.")
+        event.target.value = "" // Clear the input
+        return
+      }
+
       const reader = new FileReader()
       reader.onload = (e) => {
         setCoverImagePreview(e.target.result)
@@ -165,14 +173,11 @@ export default function CreateTripPage() {
   }
 
   const selectPlace = (place) => {
-    console.log("Place selected:", place);
-    console.log("Coordinates:", place.geometry?.location);
-    
     const destination = {
       id: place.id,
       name: place.name,
       formatted_address: place.formatted_address,
-      coordinates: place.geometry?.location || { lat: null, lng: null },
+      coordinates: place.geometry?.location,
       placeId: place.id,
       activities: [],
     }
@@ -219,13 +224,11 @@ export default function CreateTripPage() {
         destinations: selectedDestinations.map((dest) => ({
           name: dest.name,
           country: dest.formatted_address.split(", ").pop(),
-          coordinates: dest.coordinates || { lat: null, lng: null },
+          coordinates: dest.coordinates,
           placeId: dest.placeId,
-          activities: dest.activities || [],
+          activities: dest.activities,
         })),
       }
-
-      console.log("Submitting trip data:", tripData);
 
       const response = await fetch("/api/trips", {
         method: "POST",
@@ -298,7 +301,7 @@ export default function CreateTripPage() {
                         />
                       </svg>
                       <p className="text-sm">Click to upload a cover photo</p>
-                      <p className="text-xs text-gray-400">PNG, JPG up to 10MB</p>
+                      <p className="text-xs text-gray-400">PNG, JPG up to 5MB</p>
                     </div>
                   )}
                 </label>
@@ -535,11 +538,6 @@ export default function CreateTripPage() {
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-gray-900 truncate">{destination.name}</h4>
                         <p className="text-sm text-gray-600 truncate">{destination.formatted_address}</p>
-                        {destination.coordinates && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            Coordinates: {destination.coordinates.lat?.toFixed(6)}, {destination.coordinates.lng?.toFixed(6)}
-                          </p>
-                        )}
                       </div>
                       <button
                         type="button"

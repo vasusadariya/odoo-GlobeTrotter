@@ -186,7 +186,7 @@ export default function HomePage() {
               Hidden gems, breathtaking views, unforgettable adventures—where will you go next?
             </p>
             <div className="flex justify-center mt-4">
-              <Link href="/trips/create">
+              <Link href="/dashboard">
                 <motion.button
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
