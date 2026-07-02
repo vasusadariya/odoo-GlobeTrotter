@@ -5,8 +5,10 @@ import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useParams } from "next/navigation"
 import Link from "next/link"
+import toast from "react-hot-toast"
 import Button from "../../../../../components/ui/Button_1"
 import WeatherSuggestions from "../../../../../components/WeatherSuggestions"
+import ItineraryComments from "../../../../../components/ItineraryComments"
 
 export default function ItineraryViewPage() {
   const { data: session, status } = useSession()
@@ -23,6 +25,7 @@ export default function ItineraryViewPage() {
   const [isOptimizing, setIsOptimizing] = useState(false)
   const [optimizationResult, setOptimizationResult] = useState(null)
   const [isOptimized, setIsOptimized] = useState(false)
+  const [regeneratingId, setRegeneratingId] = useState(null)
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -288,12 +291,57 @@ export default function ItineraryViewPage() {
     setOptimizationResult(null)
   }
 
-  const applyOptimization = () => {
-    if (optimizationResult && optimizationResult.optimizedItinerary) {
-      setItinerary(optimizationResult.optimizedItinerary)
+  const applyOptimization = async () => {
+    if (!optimizationResult || !optimizationResult.optimizedItinerary) {
+      closeOptimizeModal()
+      return
     }
-    setIsOptimized(true)
-    closeOptimizeModal()
+
+    try {
+      const res = await fetch('/api/optimize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tripId: params.id, confirm: true }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) throw new Error(data.error || 'Failed to apply optimization')
+
+      setItinerary(data.optimizedItinerary || optimizationResult.optimizedItinerary)
+      setIsOptimized(true)
+      toast.success('Optimized route applied!')
+    } catch (error) {
+      console.error('Error applying optimization:', error)
+      toast.error(error.message || 'Failed to apply optimization')
+    } finally {
+      closeOptimizeModal()
+    }
+  }
+
+  const regenerateDay = async (itemId) => {
+    setRegeneratingId(itemId)
+    try {
+      const response = await fetch(`/api/generate-and-view/${tripId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetIds: [itemId] }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to regenerate this day")
+      }
+
+      setItinerary(data.itinerary || [])
+      toast.success("Day regenerated!")
+    } catch (error) {
+      console.error("Error regenerating day:", error)
+      toast.error(error.message || "Failed to regenerate this day")
+    } finally {
+      setRegeneratingId(null)
+    }
   }
 
   // Calculate the day number based on activity date relative to trip start date
@@ -521,15 +569,25 @@ export default function ItineraryViewPage() {
                                   </div>
                                 </div>
 
-                                {/* Budget Badge */}
-                                {section.budget > 0 && (
-                                  <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-full shadow-md">
-                                    <div className="text-sm font-bold">
-                                      {trip?.currency} {section.budget}
+                                <div className="flex items-center gap-2">
+                                  {/* Budget Badge */}
+                                  {section.budget > 0 && (
+                                    <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-full shadow-md">
+                                      <div className="text-sm font-bold">
+                                        {trip?.currency} {section.budget}
+                                      </div>
+                                      <div className="text-xs opacity-90">Budget</div>
                                     </div>
-                                    <div className="text-xs opacity-90">Budget</div>
-                                  </div>
-                                )}
+                                  )}
+                                  <button
+                                    onClick={() => regenerateDay(section.id)}
+                                    disabled={regeneratingId === section.id}
+                                    title="Regenerate this day with AI"
+                                    className="text-xs px-3 py-1.5 rounded-full border border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100 disabled:opacity-50 whitespace-nowrap"
+                                  >
+                                    {regeneratingId === section.id ? "Regenerating..." : "✨ Regenerate"}
+                                  </button>
+                                </div>
                               </div>
 
                               {/* Activity Content */}
@@ -586,6 +644,8 @@ export default function ItineraryViewPage() {
                                     </div>
                                   )}
                                 </div>
+
+                                <ItineraryComments tripId={tripId} itineraryItemId={section.id} />
                               </div>
 
                               {/* Decorative Corner */}
@@ -985,12 +1045,68 @@ export default function ItineraryViewPage() {
                     Edit Itinerary
                   </Button>
                 </Link>
+                <Button
+                  variant="outline"
+                  className="px-6 py-3 bg-transparent"
+                  onClick={openOptimizeModal}
+                  disabled={itinerary.length < 2}
+                >
+                  🧭 Optimize Route
+                </Button>
                 <Button className="px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700">
                   Share Trip
                 </Button>
               </div>
 
-              
+              {/* Optimize Route Modal */}
+              {showOptimizeModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+                    <h2 className="text-xl font-bold text-gray-900 mb-4">Route Optimization</h2>
+
+                    {isOptimizing ? (
+                      <div className="flex flex-col items-center py-8">
+                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600 mb-4"></div>
+                        <p className="text-gray-600 text-sm">Analyzing your route...</p>
+                      </div>
+                    ) : optimizationResult?.error ? (
+                      <p className="text-red-600 text-sm mb-4">{optimizationResult.error}</p>
+                    ) : optimizationResult ? (
+                      <div className="space-y-3 mb-6">
+                        <div className="flex justify-between text-sm bg-gray-50 rounded-lg px-3 py-2">
+                          <span className="text-gray-600">Distance saved</span>
+                          <span className="font-semibold text-gray-900">{optimizationResult.distanceSaved?.toFixed(1)} km</span>
+                        </div>
+                        <div className="flex justify-between text-sm bg-gray-50 rounded-lg px-3 py-2">
+                          <span className="text-gray-600">Estimated savings</span>
+                          <span className="font-semibold text-green-600">${optimizationResult.moneySaved?.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm bg-gray-50 rounded-lg px-3 py-2">
+                          <span className="text-gray-600">CO₂ reduced</span>
+                          <span className="font-semibold text-gray-900">{optimizationResult.co2Saved?.toFixed(1)} kg</span>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    <div className="flex justify-end space-x-3">
+                      <button
+                        onClick={closeOptimizeModal}
+                        className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        {isOptimized ? "Close" : "Cancel"}
+                      </button>
+                      {!isOptimizing && optimizationResult?.optimizedItinerary && !isOptimized && (
+                        <button
+                          onClick={applyOptimization}
+                          className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                        >
+                          Apply
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>

@@ -5,7 +5,10 @@ import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useParams } from "next/navigation"
 import Link from "next/link"
+import toast from "react-hot-toast"
 import Button from "../../../components/ui/Button_1"
+import InviteCollaboratorModal from "../../../components/InviteCollaboratorModal"
+import ExpenseTracker from "../../../components/ExpenseTracker"
 
 export default function TripDetailPage() {
   const { data: session, status } = useSession()
@@ -15,6 +18,8 @@ export default function TripDetailPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
   const [isUpdating, setIsUpdating] = useState(false)
+  const [isPublishing, setIsPublishing] = useState(false)
+  const [showInviteModal, setShowInviteModal] = useState(false)
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -102,6 +107,35 @@ export default function TripDetailPage() {
     } catch (error) {
       console.error("Error sharing trip:", error)
       alert("Failed to copy link")
+    }
+  }
+
+  const publishTrip = async () => {
+    if (!trip) return
+
+    if (!window.confirm("Publish this trip to the Community feed? Anyone will be able to see it.")) {
+      return
+    }
+
+    setIsPublishing(true)
+    try {
+      const response = await fetch(`/api/trips/${params.id}/publish`, {
+        method: "POST",
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to publish trip")
+      }
+
+      toast.success("Trip published to the community!")
+      router.push(`/community/post/${data.postId}`)
+    } catch (error) {
+      console.error("Error publishing trip:", error)
+      toast.error(error.message || "Failed to publish trip")
+    } finally {
+      setIsPublishing(false)
     }
   }
 
@@ -287,6 +321,12 @@ export default function TripDetailPage() {
                   )}
                   {trip.privacy === "public" ? "Make Private" : "Make Public"}
                 </Button>
+                <Button variant="outline" size="sm" onClick={() => setShowInviteModal(true)}>
+                  Invite Collaborator
+                </Button>
+                {showInviteModal && (
+                  <InviteCollaboratorModal tripId={params.id} onClose={() => setShowInviteModal(false)} />
+                )}
                 <Link href={`/trips/${params.id}/edit`}>
                   <Button variant="outline" size="sm">
                     <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -385,6 +425,8 @@ export default function TripDetailPage() {
                     ),
                 )}
             </div>
+
+            <ExpenseTracker tripId={params.id} currency={trip.currency || "USD"} />
           </div>
         )}
 
@@ -418,6 +460,12 @@ export default function TripDetailPage() {
               <Link href={`/trips/${params.id}/itinerary`}>
                 <Button>Start Planning</Button>
               </Link>
+              <Link href={`/trips/${params.id}/readiness`}>
+                <Button variant="outline">Trip Readiness</Button>
+              </Link>
+              <Button variant="outline" onClick={publishTrip} loading={isPublishing} disabled={isPublishing}>
+                Publish to Community
+              </Button>
             </div>
           </div>
         </div>
