@@ -1,9 +1,27 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "../../../../lib/auth"
+import connectDB from "../../../../lib/mongodb"
+import User from "../../../../models/User"
+import Trip from "../../../../models/Trip"
+import City from "../../../../models/City"
 
 // Force this route to be dynamic
 export const dynamic = "force-dynamic"
+
+function toDestinationShape(city, reason) {
+  return {
+    id: city._id.toString(),
+    name: city.name,
+    country: city.country,
+    formatted_address: `${city.name}, ${city.country}`,
+    geometry: city.coordinates
+      ? { location: { lat: city.coordinates.latitude, lng: city.coordinates.longitude } }
+      : undefined,
+    rating: city.costIndex ? Number((6 - city.costIndex / 2).toFixed(1)) : undefined,
+    reason,
+  }
+}
 
 export async function GET(request) {
   try {
@@ -13,78 +31,68 @@ export async function GET(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Mock recommended destinations based on user profile
-    // In a real app, this would use ML/AI to recommend based on user preferences, past trips, etc.
-    const recommendedDestinations = [
-      {
-        id: "paris_france",
-        name: "Paris",
-        country: "France",
-        formatted_address: "Paris, France",
-        geometry: {
-          location: { lat: 48.8566, lng: 2.3522 },
-        },
-        rating: 4.5,
-        reason: "Popular romantic destination",
-      },
-      {
-        id: "tokyo_japan",
-        name: "Tokyo",
-        country: "Japan",
-        formatted_address: "Tokyo, Japan",
-        geometry: {
-          location: { lat: 35.6762, lng: 139.6503 },
-        },
-        rating: 4.7,
-        reason: "Cultural experience",
-      },
-      {
-        id: "new_york_usa",
-        name: "New York",
-        country: "USA",
-        formatted_address: "New York, NY, USA",
-        geometry: {
-          location: { lat: 40.7128, lng: -74.006 },
-        },
-        rating: 4.6,
-        reason: "Urban adventure",
-      },
-      {
-        id: "london_uk",
-        name: "London",
-        country: "UK",
-        formatted_address: "London, UK",
-        geometry: {
-          location: { lat: 51.5074, lng: -0.1278 },
-        },
-        rating: 4.4,
-        reason: "Historical sites",
-      },
-      {
-        id: "bali_indonesia",
-        name: "Bali",
-        country: "Indonesia",
-        formatted_address: "Bali, Indonesia",
-        geometry: {
-          location: { lat: -8.3405, lng: 115.092 },
-        },
-        rating: 4.8,
-        reason: "Tropical paradise",
-      },
-      {
-        id: "rome_italy",
-        name: "Rome",
-        country: "Italy",
-        formatted_address: "Rome, Italy",
-        geometry: {
-          location: { lat: 41.9028, lng: 12.4964 },
-        },
-        rating: 4.6,
-        reason: "Ancient history",
-      },
-    ]
+    await connectDB()
 
-    return NextResponse.json({ destinations: recommendedDestinations }, { status: 200 })
+    const user = await User.findOne({
+      $or: [{ googleId: session.user.id }, { email: session.user.email }],
+    })
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
+
+    const pastCountries = (await Trip.distinct("destinations.country", { owner: user._id })).filter(Boolean)
+    const homeCountry = user.location?.country
+
+    const notVisited = pastCountries.length > 0 ? { country: { $nin: pastCountries } } : {}
+
+    const recommended = []
+    const seenIds = new Set()
+
+    // Prefer cities near the user's home region that they haven't already visited.
+    if (homeCountry && !pastCountries.includes(homeCountry)) {
+      const nearby = await City.find({ country: homeCountry, ...notVisited })
+        .sort({ popularityRank: -1 })
+        .limit(3)
+        .lean()
+
+      for (const city of nearby) {
+        recommended.push(toDestinationShape(city, `Popular near ${homeCountry}`))
+        seenIds.add(city._id.toString())
+      }
+    }
+
+    if (recommended.length < 6) {
+      const filler = await City.find(notVisited)
+        .sort({ popularityRank: -1 })
+        .limit(6)
+        .lean()
+
+      for (const city of filler) {
+        if (recommended.length >= 6) break
+        if (seenIds.has(city._id.toString())) continue
+        recommended.push(toDestinationShape(city, "Trending with other travelers"))
+        seenIds.add(city._id.toString())
+      }
+    }
+
+    // Cold-start fallback: City guide has too few entries yet (fresh deployment) -
+    // fall back to trip-aggregated destinations so the endpoint never returns empty.
+    if (recommended.length === 0) {
+      const topFromTrips = await Trip.getTopDestinations({ limit: 6 })
+      for (const dest of topFromTrips) {
+        recommended.push({
+          id: `${dest.name}_${dest.country}`.toLowerCase().replace(/\s+/g, "_"),
+          name: dest.name,
+          country: dest.country,
+          formatted_address: `${dest.name}, ${dest.country}`,
+          geometry: dest.coordinates ? { location: dest.coordinates } : undefined,
+          reason: "Popular with other travelers",
+        })
+      }
+    }
+
+    return NextResponse.json({ destinations: recommended }, { status: 200 })
   } catch (error) {
     console.error("Recommended destinations error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

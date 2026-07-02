@@ -64,25 +64,26 @@ export default function HomePage() {
 
     setIsSearching(true)
     try {
-      // Add filter and sort parameters to the API call
-      let apiUrl = `/api/destinations/top?search=${encodeURIComponent(query)}&limit=6`
+      // Filtered browsing is backed by the curated City guide (/api/cities),
+      // which has real region/cost/tag fields to filter on - unlike the
+      // trip-aggregated /api/destinations/top endpoint.
+      let apiUrl = `/api/cities?search=${encodeURIComponent(query)}&limit=6`
 
-      // Add sort parameter
       if (sortOption) {
         apiUrl += `&sort=${sortOption}`
       }
 
-      // Add filter parameters
       if (filterOptions.continents.length > 0) {
-        apiUrl += `&continents=${filterOptions.continents.join(',')}`
+        apiUrl += `&region=${filterOptions.continents.join(',')}`
       }
 
       if (filterOptions.costLevel) {
-        apiUrl += `&cost=${filterOptions.costLevel}`
+        const costMax = { Budget: 4, Moderate: 7, Luxury: 10 }[filterOptions.costLevel]
+        if (costMax) apiUrl += `&costMax=${costMax}`
       }
 
       if (filterOptions.travelStyle) {
-        apiUrl += `&style=${filterOptions.travelStyle}`
+        apiUrl += `&tag=${encodeURIComponent(filterOptions.travelStyle.toLowerCase())}`
       }
 
       const response = await fetch(apiUrl)

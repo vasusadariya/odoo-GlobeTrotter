@@ -14,78 +14,8 @@ export async function GET(request) {
     const limit = parseInt(searchParams.get('limit') || '10')
     const country = searchParams.get('country')
     const searchQuery = searchParams.get('search')?.trim()
-    
-    // Build the match stage with regex search if search query is provided
-    let matchStage = {}
-    
-    if (country) {
-      matchStage["destinations.country"] = country
-    }
-    
-    if (searchQuery && searchQuery.length >= 2) {
-      // Create case-insensitive regex pattern for searching
-      const searchRegex = new RegExp(searchQuery, 'i')
-      
-      // If country is already specified, combine with search query
-      if (country) {
-        matchStage = {
-          $and: [
-            { "destinations.country": country },
-            { $or: [
-              { "destinations.name": { $regex: searchRegex } },
-              { "destinations.country": { $regex: searchRegex } }
-            ]}
-          ]
-        }
-      } else {
-        // If no country filter, just search by name or country
-        matchStage = {
-          $or: [
-            { "destinations.name": { $regex: searchRegex } },
-            { "destinations.country": { $regex: searchRegex } }
-          ]
-        }
-      }
-    }
-    
-    const topDestinations = await Trip.aggregate([
-      { $match: matchStage },
-      { $unwind: "$destinations" },
-      // Second match stage to filter on unwound destinations
-      searchQuery && searchQuery.length >= 2 ? {
-        $match: {
-          $or: [
-            { "destinations.name": { $regex: new RegExp(searchQuery, 'i') } },
-            { "destinations.country": { $regex: new RegExp(searchQuery, 'i') } }
-          ]
-        }
-      } : { $match: {} },
-      {
-        $group: {
-          _id: {
-            name: "$destinations.name", 
-            country: "$destinations.country"
-          },
-          count: { $sum: 1 },
-          coordinates: { $first: "$destinations.coordinates" },
-          placeId: { $first: "$destinations.placeId" },
-          image: { $first: "$destinations.image" },
-        }
-      },
-      { $sort: { count: -1 } },
-      { $limit: limit },
-      {
-        $project: {
-          _id: 0,
-          name: "$_id.name",
-          country: "$_id.country",
-          count: 1,
-          coordinates: 1,
-          placeId: 1,
-          image: 1
-        }
-      }
-    ]);
+
+    const topDestinations = await Trip.getTopDestinations({ limit, country, search: searchQuery });
     
     // Get Google Places API key
     const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY

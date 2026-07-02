@@ -104,6 +104,7 @@ const tripSchema = new mongoose.Schema(
     likes: { type: Number, default: 0 },
     views: { type: Number, default: 0 },
     sharedWith: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    weatherNudgeSentAt: { type: Date, default: null },
   },
   {
     timestamps: true,
@@ -125,17 +126,31 @@ tripSchema.virtual("estimatedCost").get(function () {
   return 0
 })
 
-// Static method to get top destinations by count
-tripSchema.statics.getTopDestinations = async function(limit = 10, country = null) {
-  const matchStage = country ? { "destinations.country": country } : {};
-  
+// Static method to get top destinations by count, optionally filtered by
+// country and/or a case-insensitive search against destination name/country.
+tripSchema.statics.getTopDestinations = async function(options = {}) {
+  const { limit = 10, country = null, search = null } = options;
+
+  const preUnwindMatch = country ? { "destinations.country": country } : {};
+
+  const searchMatch =
+    search && search.trim().length >= 2
+      ? {
+          $or: [
+            { "destinations.name": { $regex: search.trim(), $options: "i" } },
+            { "destinations.country": { $regex: search.trim(), $options: "i" } },
+          ],
+        }
+      : null;
+
   const pipeline = [
-    { $match: matchStage },
+    { $match: preUnwindMatch },
     { $unwind: "$destinations" },
+    ...(searchMatch ? [{ $match: searchMatch }] : []),
     {
       $group: {
         _id: {
-          name: "$destinations.name", 
+          name: "$destinations.name",
           country: "$destinations.country"
         },
         count: { $sum: 1 },
@@ -158,7 +173,7 @@ tripSchema.statics.getTopDestinations = async function(limit = 10, country = nul
       }
     }
   ];
-  
+
   return await this.aggregate(pipeline);
 };
 
