@@ -96,12 +96,20 @@ export default function PostPage() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       {/* Back button */}
-      <Link href="/community">
-        <Button variant="ghost" className="mb-6 hover:bg-gray-100">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Community
-        </Button>
-      </Link>
+      <div className="flex items-center justify-between mb-6">
+        <Link href="/community">
+          <Button variant="ghost" className="hover:bg-gray-100">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Community
+          </Button>
+        </Link>
+
+        {post.trip && (
+          <Link href={`/trips/${post.trip}`}>
+            <Button variant="outline">View Original Trip</Button>
+          </Link>
+        )}
+      </div>
 
       {/* Post header */}
       <div className="mb-6">

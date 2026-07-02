@@ -37,6 +37,11 @@ const CommunityPostSchema = new mongoose.Schema(
       ref: "User",
       required: [true, "Author is required"],
     },
+    trip: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Trip",
+      default: null,
+    },
     views: {
       type: Number,
       default: 0,
