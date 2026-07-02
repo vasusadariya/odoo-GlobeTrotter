@@ -120,6 +120,20 @@ const UserSchema = new mongoose.Schema(
             country: String,
             updatedAt: Date,
         },
+
+        preferences: {
+            currency: { type: String, default: "USD" },
+            language: { type: String, default: "en" },
+            notifications: {
+                email: { type: Boolean, default: true },
+                push: { type: Boolean, default: false },
+                marketing: { type: Boolean, default: false },
+            },
+            privacy: {
+                profileVisible: { type: Boolean, default: true },
+                tripsVisible: { type: Boolean, default: false },
+            },
+        },
     },
     {
         timestamps: true,
