@@ -4,6 +4,7 @@ import { authOptions } from "../../../lib/auth"
 import connectDB from "../../../lib/mongodb"
 import Trip from "../../../models/Trip"
 import User from "../../../models/User"
+import { upsertCityFromDestination } from "../../../lib/cityGuide"
 
 // Force this route to be dynamic
 export const dynamic = "force-dynamic"
@@ -82,6 +83,8 @@ export async function POST(request) {
     }
 
     const trip = await Trip.create(tripData)
+
+    tripData.destinations.forEach((dest) => upsertCityFromDestination(dest))
 
     // Populate the trip with user details
     await trip.populate("owner", "name email")
