@@ -4,6 +4,7 @@ import { authOptions } from "../../../../../lib/auth"
 import connectDB from "../../../../../lib/mongodb"
 import Trip from "../../../../../models/Trip"
 import User from "../../../../../models/User"
+import { upsertCityFromDestination } from "../../../../../lib/cityGuide"
 
 export async function GET(request, { params }) {
   try {
@@ -15,13 +16,26 @@ export async function GET(request, { params }) {
 
     await connectDB()
 
-    const trip = await Trip.findOne({
-      _id: params.id,
-      owner: session.user.id,
+    const user = await User.findOne({
+      $or: [{ googleId: session.user.id }, { email: session.user.email }],
     })
+
+    if (!user) {
+      return NextResponse.json({ success: false, error: "User not found" }, { status: 404 })
+    }
+
+    const trip = await Trip.findById(params.id)
 
     if (!trip) {
       return NextResponse.json({ success: false, error: "Trip not found" }, { status: 404 })
+    }
+
+    const isOwner = trip.owner.toString() === user._id.toString()
+    const isCollaborator = trip.travelers.some((traveler) => traveler.user.toString() === user._id.toString())
+    const isPublic = trip.privacy === "public"
+
+    if (!isOwner && !isCollaborator && !isPublic) {
+      return NextResponse.json({ success: false, error: "You don't have permission to view this itinerary" }, { status: 403 })
     }
 
     return NextResponse.json({
@@ -126,20 +140,30 @@ export async function POST(request, { params }) {
       destinations: tripDestinations, // Update trip-level destinations
     }
 
-    const trip = await Trip.findOneAndUpdate(
-      {
-        _id: params.id,
-        owner: user._id,
-      },
+    const existingTrip = await Trip.findById(params.id)
+
+    if (!existingTrip) {
+      return NextResponse.json({ success: false, error: "Trip not found" }, { status: 404 })
+    }
+
+    const isOwner = existingTrip.owner.toString() === user._id.toString()
+    const isCollaborator = existingTrip.travelers.some(
+      (traveler) => traveler.user.toString() === user._id.toString() && traveler.role === "collaborator",
+    )
+
+    if (!isOwner && !isCollaborator) {
+      return NextResponse.json({ success: false, error: "You don't have permission to edit this itinerary" }, { status: 403 })
+    }
+
+    const trip = await Trip.findByIdAndUpdate(
+      params.id,
       {
         $set: updateData,
       },
       { new: true },
     )
 
-    if (!trip) {
-      return NextResponse.json({ success: false, error: "Trip not found" }, { status: 404 })
-    }
+    tripDestinations.forEach((dest) => upsertCityFromDestination(dest))
 
     return NextResponse.json({
       success: true,
