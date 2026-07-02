@@ -1,72 +1,41 @@
 import { NextResponse } from "next/server";
-import mongoose from "mongoose";
-import Trip from "@/models/Trip";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../../../lib/auth";
+import connectDB from "../../../lib/mongodb";
+import Trip from "../../../models/Trip";
+import User from "../../../models/User";
 import haversine from "haversine-distance";
-
-const MODEL_COEFFS = { intercept: -31, flight: 0.065, car: 0.45 };
-const MILE_TO_KM = 1.60934;
-const ORS_API_KEY = process.env.ORS_API_KEY;
-
-async function getCarDistance(lat1, lng1, lat2, lng2) {
-  const url = `https://api.openrouteservice.org/v2/directions/driving-car?start=${lng1},${lat1}&end=${lng2},${lat2}`;
-  try {
-    const res = await fetch(url, {
-      headers: { Authorization: ORS_API_KEY }
-    });
-
-    if (!res.ok) {
-      const text = await res.text();
-      console.warn("ORS API error response:", text);
-      return haversine({ lat: lat1, lon: lng1 }, { lat: lat2, lon: lng2 }) / 1000;
-    }
-
-    const data = await res.json();
-    return data.features[0].properties.summary.distance / 1000; // in km
-  } catch (err) {
-    console.warn("ORS API call failed, using haversine:", err.message);
-    return haversine({ lat: lat1, lon: lng1 }, { lat: lat2, lon: lng2 }) / 1000;
-  }
-}
-
-function optimizeOrder(points) {
-  if (points.length <= 2) return points;
-  const remaining = [...points];
-  const route = [remaining.shift()];
-
-  while (remaining.length) {
-    let last = route[route.length - 1];
-    let nearestIndex = 0;
-    let nearestDist = Infinity;
-
-    remaining.forEach((p, i) => {
-      const dist = haversine(last.coordinates, p.coordinates);
-      if (dist < nearestDist) {
-        nearestDist = dist;
-        nearestIndex = i;
-      }
-    });
-
-    route.push(remaining.splice(nearestIndex, 1)[0]);
-  }
-  return route;
-}
-
-function predictMoneySaved(flightKmSaved, carKmSaved) {
-  return (
-    MODEL_COEFFS.intercept +
-    MODEL_COEFFS.flight * flightKmSaved +
-    MODEL_COEFFS.car * carKmSaved
-  );
-}
+import { getCarDistance, optimizeOrder, predictMoneySaved, estimateCO2, MILE_TO_KM } from "../../../lib/routeOptimize";
 
 export async function POST(req) {
   try {
-    const { tripId } = await req.json();
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    await mongoose.connect(process.env.MONGODB_URI);
+    const { tripId, confirm } = await req.json();
+
+    await connectDB();
+
+    const user = await User.findOne({
+      $or: [{ googleId: session.user.id }, { email: session.user.email }],
+    });
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
     const trip = await Trip.findById(tripId);
     if (!trip) {
       return NextResponse.json({ error: "Trip not found" }, { status: 404 });
+    }
+
+    const isOwner = trip.owner.toString() === user._id.toString();
+    const isCollaborator = trip.travelers.some(
+      (t) => t.user.toString() === user._id.toString() && t.role === "collaborator",
+    );
+    if (!isOwner && !isCollaborator) {
+      return NextResponse.json({ error: "You don't have permission to optimize this trip" }, { status: 403 });
     }
 
     const itinerary = trip.itinerary.filter(item => item.coordinates?.lat && item.coordinates?.lng);
@@ -115,17 +84,24 @@ export async function POST(req) {
 
     const moneySaved = predictMoneySaved(flightKmSaved, carKmSaved);
     const distanceSaved = flightKmSaved + carKmSaved;
+    const co2Saved = estimateCO2({ flightKm: flightKmSaved, carKm: carKmSaved });
 
     // Merge optimized flights and cars into new itinerary order
-    const newItinerary = [...optimizedFlights, ...optimizedCars];
+    const optimizedItinerary = [...optimizedFlights, ...optimizedCars];
 
-    // Update trip with new itinerary
-    trip.itinerary = newItinerary;
-    await trip.save();
+    // Only persist when the caller explicitly confirms - opening the
+    // optimize modal should preview, not silently mutate the trip.
+    if (confirm) {
+      trip.itinerary = optimizedItinerary;
+      await trip.save();
+    }
 
     return NextResponse.json({
       distanceSaved,
-      moneySaved
+      moneySaved,
+      co2Saved,
+      optimizedItinerary,
+      applied: !!confirm,
     });
   } catch (err) {
     console.error(err);

@@ -46,8 +46,15 @@ export default function ItineraryBuilderPage() {
   const [isGlobalSearching, setIsGlobalSearching] = useState(false)
   const [selectedDestinations, setSelectedDestinations] = useState([])
 
+  const [routePreview, setRoutePreview] = useState(null)
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false)
+
   const debouncedSearchQuery = useDebounce(searchStates[activeSearchSection] || "", 300)
   const debouncedGlobalSearch = useDebounce(globalSearchQuery, 300)
+  const waypointsKey = JSON.stringify(
+    sections.filter((s) => s.coordinates).map((s) => ({ name: s.location || s.title, coordinates: s.coordinates })),
+  )
+  const debouncedWaypointsKey = useDebounce(waypointsKey, 500)
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -59,6 +66,35 @@ export default function ItineraryBuilderPage() {
       fetchTripAndItinerary()
     }
   }, [status, params.id])
+
+  useEffect(() => {
+    const waypoints = JSON.parse(debouncedWaypointsKey || "[]")
+
+    if (waypoints.length < 2 || !params.id || params.id === "undefined") {
+      setRoutePreview(null)
+      return
+    }
+
+    const fetchPreview = async () => {
+      setIsLoadingPreview(true)
+      try {
+        const response = await fetch(`/api/trips/${params.id}/route-preview`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ waypoints }),
+        })
+        if (response.ok) {
+          setRoutePreview(await response.json())
+        }
+      } catch (error) {
+        console.error("Error fetching route preview:", error)
+      } finally {
+        setIsLoadingPreview(false)
+      }
+    }
+
+    fetchPreview()
+  }, [debouncedWaypointsKey, params.id])
 
   const fetchTripAndItinerary = async () => {
     try {
@@ -977,6 +1013,25 @@ export default function ItineraryBuilderPage() {
                   <li>• Set realistic timeframes for each activity</li>
                   <li>• Consider meal breaks and rest periods</li>
                 </ul>
+              </div>
+
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <h4 className="font-medium text-gray-700 mb-3">Route Preview</h4>
+                {isLoadingPreview ? (
+                  <p className="text-sm text-gray-400">Calculating route...</p>
+                ) : routePreview && (routePreview.flightLegCount > 0 || routePreview.carLegCount > 0) ? (
+                  <div className="text-sm text-gray-600 space-y-1">
+                    {routePreview.flightLegCount > 0 && (
+                      <p>✈️ {routePreview.flightLegCount} flight leg{routePreview.flightLegCount === 1 ? "" : "s"} · {routePreview.totalFlightKm.toFixed(0)} km</p>
+                    )}
+                    {routePreview.carLegCount > 0 && (
+                      <p>🚗 {routePreview.carLegCount} drive leg{routePreview.carLegCount === 1 ? "" : "s"} · {routePreview.totalCarKm.toFixed(0)} km</p>
+                    )}
+                    <p className="text-xs text-gray-500 mt-2">Estimated CO₂: {routePreview.estimatedCO2Kg.toFixed(1)} kg</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400">Add locations to two or more sections to preview your route.</p>
+                )}
               </div>
             </div>
           </div>
