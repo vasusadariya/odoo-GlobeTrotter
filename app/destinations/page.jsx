@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import Button from "@/components/ui/Button_1"
+import { getCityImageUrl } from "@/lib/cityImage"
 
 export default function DestinationsPage() {
   const [destinations, setDestinations] = useState([])
@@ -10,45 +11,15 @@ export default function DestinationsPage() {
   const [error, setError] = useState(null)
   const [selectedCountry, setSelectedCountry] = useState("")
   const [countries, setCountries] = useState([])
-  
-  // City image extensions mapping from your public folder
-  const cityImageExtensions = {
-    'ahmedabad': 'png',
-    'bali': 'png',
-    'florence': 'jpg',
-    'kyoto': 'png',
-    'leh': 'jpg',
-    'london': 'png',
-    'mumbai': 'jpg',
-    'paris': 'png',
-    'rajkot': 'jpg',
-    'rajula': 'png',
-    'rome': 'png',
-    'tokyo': 'jpg',
-    'valsad': 'jpg'
-  };
-  
-  // Function to get the appropriate image URL with correct extension
-  const getCityImageUrl = (destination) => {
-    // If destination already has an image, use it
-    if (destination.image) {
-      return destination.image;
-    }
-    
-    const cityName = destination.name.toLowerCase();
-    const extension = cityImageExtensions[cityName] || 'jpg';
-    
-    return `/${cityName}.${extension}`;
-  }
-  
+
   useEffect(() => {
     const fetchTopDestinations = async () => {
       try {
         setLoading(true)
         // Fetch more destinations (limit=20) for the dedicated page
-        const url = selectedCountry 
-          ? `/api/destinations/top?limit=20&country=${encodeURIComponent(selectedCountry)}`
-          : '/api/destinations/top?limit=20'
+        const url = selectedCountry
+          ? `/api/cities?limit=20&country=${encodeURIComponent(selectedCountry)}`
+          : '/api/cities?limit=20'
         
         const response = await fetch(url)
         

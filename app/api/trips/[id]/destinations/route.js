@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "../../../../../lib/auth"
 import connectDB from "../../../../../lib/mongodb"
 import Trip from "../../../../../models/Trip"
+import { upsertCityFromDestination } from "../../../../../lib/cityGuide"
 
 // Force this route to be dynamic
 export const dynamic = "force-dynamic"
@@ -63,6 +64,8 @@ export async function POST(request, { params }) {
 
     trip.destinations.push(newDestination)
     await trip.save()
+
+    upsertCityFromDestination({ name, country, coordinates, placeId })
 
     return NextResponse.json(
       {

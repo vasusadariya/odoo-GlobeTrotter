@@ -11,6 +11,10 @@ const CitySchema = new mongoose.Schema({
     required: [true, 'Country is required'],
     trim: true,
   },
+  placeId: {
+    type: String,
+    trim: true,
+  },
   region: {
     type: String,
     trim: true,
@@ -49,5 +53,7 @@ const CitySchema = new mongoose.Schema({
 }, {
   timestamps: true,
 });
+
+CitySchema.index({ name: 1, country: 1 }, { unique: true });
 
 export default mongoose.models.City || mongoose.model('City', CitySchema);

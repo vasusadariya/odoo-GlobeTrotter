@@ -3,37 +3,18 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import Button from "./ui/Button_1"
+import { getCityImageUrl } from "@/lib/cityImage"
 
 export default function TopRegionalCities() {
   const [destinations, setDestinations] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  
-  // Updated mapping of cities to their correct file extensions from your file structure
-  const cityImageExtensions = {
-    'ahmedabad': 'png',
-    'bali': 'png',
-    'florence': 'jpg',
-    'kyoto': 'png',
-    'leh': 'jpg',
-    'london': 'png',
-    'mumbai': 'jpg',
-    'paris': 'png',
-    'rajkot': 'jpg',
-    'rajula': 'png',
-    'rome': 'png',
-    'tokyo': 'jpg',
-    'valsad': 'jpg'
-  };
-  
-  // Default extension if not in the mapping
-  const defaultExtension = 'jpg';
-  
+
   useEffect(() => {
     const fetchTopDestinations = async () => {
       try {
         setLoading(true)
-        const response = await fetch('/api/destinations/top?limit=6')
+        const response = await fetch('/api/cities?limit=6')
         
         if (!response.ok) {
           throw new Error('Failed to fetch top destinations')
@@ -51,19 +32,6 @@ export default function TopRegionalCities() {
     
     fetchTopDestinations()
   }, [])
-  
-  // Function to get the appropriate image URL with correct extension
-  const getCityImageUrl = (destination) => {
-    // If destination already has an image, use it
-    if (destination.image) {
-      return destination.image;
-    }
-    
-    const cityName = destination.name.toLowerCase();
-    const extension = cityImageExtensions[cityName] || defaultExtension;
-    
-    return `/${cityName}.${extension}`;
-  }
   
   if (loading) {
     return (
