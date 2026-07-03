@@ -8,9 +8,11 @@ import Button from '../../../components/ui/Button_1';
 import dynamic from "next/dynamic";
 import Image from "next/image";
 
-// Import the rich text editor component dynamically to prevent SSR issues
-const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
-import "react-quill/dist/quill.snow.css";
+// Import the rich text editor component dynamically to prevent SSR issues.
+// Uses react-quill-new, a maintained fork - the original react-quill calls
+// the now-removed ReactDOM.findDOMNode and hard-crashes under React 19.
+const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
+import "react-quill-new/dist/quill.snow.css";
 
 const TAGS = [
   "solo travel", "family", "culture", "adventure", "budget", 
