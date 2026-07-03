@@ -6,6 +6,7 @@ import connectDB from "../../../../lib/mongodb";
 import Trip from "@/models/Trip";
 import User from "@/models/User";
 import { GoogleGenAI, Type } from "@google/genai";
+import { ensureUniqueItineraryIds } from "@/lib/itineraryIds";
 
 const ITINERARY_ITEM_SCHEMA = {
   type: Type.OBJECT,
@@ -30,6 +31,11 @@ const ITINERARY_ITEM_SCHEMA = {
     },
     notes: { type: Type.STRING },
   },
+  // id/title/startDate/endDate are required on Trip.itinerary items (see
+  // models/Trip.js) - without this, Gemini sometimes omits them (especially
+  // on scoped/single-day regeneration prompts) and trip.save() throws an
+  // opaque Mongoose validation error instead of a usable one.
+  required: ["id", "title", "startDate", "endDate"],
 };
 
 export async function POST(req, props) {
@@ -124,18 +130,37 @@ export async function POST(req, props) {
 
     const generated = JSON.parse(response.text);
 
+    // Belt-and-suspenders: the responseSchema's `required` array is a
+    // strong hint, not a guarantee - Gemini can still omit fields. Reject
+    // any item missing what Trip.itinerary actually requires so a bad
+    // generation surfaces as a clear 502 instead of an opaque Mongoose
+    // validation error from trip.save().
+    const isUsable = (item) =>
+      item && item.id && item.title && item.startDate && item.endDate && !isNaN(new Date(item.startDate));
+
     if (isScoped) {
       const generatedById = new Map(generated.map((item) => [item.id, item]));
-      trip.itinerary = (trip.itinerary || []).map((item) =>
-        targetIds.includes(item.id) ? (generatedById.get(item.id) || item) : item,
-      );
+      trip.itinerary = (trip.itinerary || []).map((item) => {
+        if (!targetIds.includes(item.id)) return item;
+        const candidate = generatedById.get(item.id);
+        return isUsable(candidate) ? candidate : item;
+      });
       await trip.save();
 
       return NextResponse.json({ itinerary: trip.itinerary });
     }
 
-    // Full-replace behavior, unchanged from before targetIds existed.
-    trip.itinerary = generated;
+    if (!generated.every(isUsable)) {
+      return NextResponse.json(
+        { error: "AI generation returned incomplete itinerary items - please try again" },
+        { status: 502 },
+      );
+    }
+
+    // Full-replace behavior, unchanged from before targetIds existed. Gemini
+    // doesn't guarantee unique ids across the batch - enforce it before
+    // persisting, since duplicate ids break React list rendering.
+    trip.itinerary = ensureUniqueItineraryIds(generated);
     await trip.save();
 
     return NextResponse.json({ redirectUrl: `/trips/${tripId}/itinerary/view` });

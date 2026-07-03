@@ -5,6 +5,7 @@ import connectDB from "../../../../../lib/mongodb"
 import Trip from "../../../../../models/Trip"
 import User from "../../../../../models/User"
 import { upsertCityFromDestination } from "../../../../../lib/cityGuide"
+import { ensureUniqueItineraryIds } from "../../../../../lib/itineraryIds"
 
 export async function GET(request, props) {
   const params = await props.params;
@@ -124,7 +125,7 @@ export async function POST(request, props) {
     })
 
     const updateData = {
-      itinerary: processedItinerary,
+      itinerary: ensureUniqueItineraryIds(processedItinerary),
     }
 
     // Only touch trip-level destinations when the client actually sent new
