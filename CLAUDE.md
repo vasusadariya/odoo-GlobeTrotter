@@ -11,7 +11,7 @@ npm run start    # run production build
 npm run lint     # next lint (eslint-config-next)
 ```
 
-There is no test suite in this repo. `next.config.js` sets `eslint.ignoreDuringBuilds: true`, so lint errors will not fail `npm run build`.
+There is no test suite in this repo. `next.config.js` no longer has an `eslint` key (Next 16 removed that option) — `next build` does not run ESLint at all, so lint errors never fail `npm run build` regardless.
 
 Environment variables (read from `.env.local`, none committed as an example file exists in repo):
 - `MONGODB_URI`, `NEXTAUTH_URL`, `NEXTAUTH_SECRET` — required
@@ -25,14 +25,14 @@ Environment variables (read from `.env.local`, none committed as an example file
 
 ## Architecture
 
-Next.js 14 App Router project, plain JSX (no TypeScript). All code lives in `app/`, `components/`, `lib/`, `models/`.
+Next.js 16 App Router project (React 19), plain JSX (no TypeScript). All code lives in `app/`, `components/`, `lib/`, `models/`. Builds use Turbopack by default. Route handler and page `params`/`searchParams` are async (`Promise`) as of Next 15+ — route handlers do `const { id } = await params` (or `params` destructured from a second arg and awaited), and client component pages that receive `params` as a prop must unwrap it with React's `use()` hook (pages using `useParams()` from `next/navigation` instead are unaffected).
 
 ### Auth
 
 - NextAuth.js with JWT sessions, configured in `lib/auth.js` (`authOptions`), mounted at `app/api/auth/[...nextauth]/route.js`.
 - Two providers: Credentials (email/password checked against `models/User.js`, bcrypt hashing/comparison lives on the schema) and Google OAuth (auto-links to an existing user by email, or creates one via `User.createFromGoogle`).
-- `middleware.js` uses `next-auth/middleware` to gate `/dashboard/:path*`, `/trips/:path*`, `/profile/:path*`. Note the trailing routes like `app/community`, `app/destinations`, `app/settings` are **not** in the matcher — check session manually in those API routes/pages if they need auth.
-- `User` requires `firstName`, `lastName`, `phone`, `city`, `country` at signup (see `app/api/auth/register/route.js`) — Google sign-in creates users with empty `phone`/`city`/`country` placeholders that must be backfilled later (see `app/api/user/route.js` / settings page).
+- `proxy.js` (renamed from `middleware.js` in Next 16 — the file convention itself changed, functionally identical) wraps `next-auth/middleware` to gate `/dashboard/:path*`, `/trips/:path*`, `/profile/:path*`. Note the trailing routes like `app/community`, `app/destinations`, `app/settings` are **not** in the matcher — check session manually in those API routes/pages if they need auth.
+- `User` requires `firstName`, `lastName`, `phone`, `city`, `country` at signup (see `app/api/auth/register/route.js`) — these fields are conditionally required (`required: function() { return !this.googleId }`, mirroring the `password` field) so Google sign-in can create a user without them; they're left unset (not empty-string placeholders) and get backfilled later via `app/api/user/route.js` / the settings page. `phone`'s unique index is `sparse: true` for the same reason.
 - API routes resolve the current user by looking up `User.findOne({ $or: [{ googleId: session.user.id }, { email: session.user.email }] })` rather than trusting `session.user.id` directly as the Mongo `_id` — follow this pattern in new routes, since credentials-login sessions carry the Mongo `_id` while Google-login sessions may not.
 
 ### Data model — read this before touching trips/itineraries
@@ -64,3 +64,4 @@ The codebase mixes deep relative imports (`../../../../lib/mongodb`) and the `@/
 - **Google Places** (`app/api/places/search`, `app/api/places/details`, city/destination search) and **Google Maps**.
 - **OpenWeatherMap** (5-day/3-hour forecast, averaged per day) for weather suggestions.
 - **OpenRouteService** for driving distances in `/api/optimize`, with a haversine fallback on any failure — always keep that fallback when touching this code, since the key is optional in some environments.
+- **react-quill-new** (not `react-quill`) powers the rich text editor in `app/community/create/page.jsx`. The original `react-quill` calls the now-removed `ReactDOM.findDOMNode` and hard-crashes under React 19 — don't reintroduce it.
