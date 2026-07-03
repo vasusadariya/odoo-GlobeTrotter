@@ -177,29 +177,6 @@ tripSchema.statics.getTopDestinations = async function(options = {}) {
   return await this.aggregate(pipeline);
 };
 
-// Method to increment destination count (updates existing destination or adds a new one)
-tripSchema.methods.incrementDestinationCount = async function(destinationName, country) {
-  const Trip = mongoose.model('Trip');
-  
-  // First, update all existing trips with this destination
-  await Trip.updateMany(
-    { "destinations.name": destinationName, "destinations.country": country },
-    { $inc: { "destinations.$.count": 1 } }
-  );
-  
-  // Also update this trip if it contains the destination
-  const destinationIndex = this.destinations.findIndex(
-    dest => dest.name === destinationName && dest.country === country
-  );
-  
-  if (destinationIndex >= 0) {
-    this.destinations[destinationIndex].count += 1;
-    await this.save();
-  }
-  
-  return this;
-};
-
 // Ensure virtual fields are serialized
 tripSchema.set("toJSON", { virtuals: true })
 
