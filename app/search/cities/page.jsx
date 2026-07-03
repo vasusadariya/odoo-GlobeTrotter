@@ -4,7 +4,9 @@ import { useState, useEffect, useCallback } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
+import toast from "react-hot-toast"
 import Button from "../../../components/ui/Button_1"
+import { getCityImageUrl } from "../../../lib/cityImage"
 
 // Debounce hook
 function useDebounce(value, delay) {
@@ -34,8 +36,9 @@ export default function CitySearchPage() {
   const [searchResults, setSearchResults] = useState([])
   const [isSearching, setIsSearching] = useState(false)
   const [selectedCountry, setSelectedCountry] = useState("")
-  const [selectedRegion, setSelectedRegion] = useState("")
   const [imageErrors, setImageErrors] = useState(new Set())
+  const [popularCities, setPopularCities] = useState([])
+  const [addingCityId, setAddingCityId] = useState(null)
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300)
 
@@ -82,6 +85,22 @@ export default function CitySearchPage() {
     }
   }, [initialQuery, searchCities])
 
+  // Real popular-destinations list (City guide), shown before any search
+  useEffect(() => {
+    const fetchPopular = async () => {
+      try {
+        const response = await fetch("/api/cities?sort=popular&limit=8")
+        if (response.ok) {
+          const data = await response.json()
+          setPopularCities(data.destinations || [])
+        }
+      } catch (error) {
+        console.error("Error fetching popular cities:", error)
+      }
+    }
+    fetchPopular()
+  }, [])
+
   // Authentication check
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -90,11 +109,9 @@ export default function CitySearchPage() {
   }, [status, router])
 
   const addCityToTrip = async (city) => {
-    if (!tripId) {
-      alert("No trip selected. Please select a trip first.")
-      return
-    }
+    if (!tripId) return
 
+    setAddingCityId(city.id)
     try {
       const response = await fetch(`/api/trips/${tripId}/destinations`, {
         method: "POST",
@@ -110,13 +127,15 @@ export default function CitySearchPage() {
       })
 
       if (response.ok) {
-        alert(`${city.name} added to your trip!`)
+        toast.success(`${city.name} added to your trip!`)
       } else {
-        alert("Failed to add city to trip")
+        toast.error("Failed to add city to trip")
       }
     } catch (error) {
       console.error("Error adding city:", error)
-      alert("Failed to add city to trip")
+      toast.error("Failed to add city to trip")
+    } finally {
+      setAddingCityId(null)
     }
   }
 
@@ -283,13 +302,19 @@ export default function CitySearchPage() {
                           {city.formatted_address.split(", ").pop()}
                         </div>
 
-                        {/* Mock cost index and popularity */}
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-green-600">Cost Index: Medium</span>
-                          <span className="text-blue-600">Popular</span>
-                        </div>
                       </div>
                     </div>
+
+                    {tripId && (
+                      <Button
+                        onClick={() => addCityToTrip(city)}
+                        loading={addingCityId === city.id}
+                        size="sm"
+                        className="w-full"
+                      >
+                        Add to Trip
+                      </Button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -316,52 +341,59 @@ export default function CitySearchPage() {
         )}
 
         {/* Popular Destinations - Only show if no search query or initial load */}
-        {searchQuery.length < 2 && !initialQuery && (
+        {searchQuery.length < 2 && !initialQuery && popularCities.length > 0 && (
           <div className="bg-white rounded-2xl shadow-lg p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-6">Popular Destinations</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[
-                { name: "Paris", country: "France", image: "🇫🇷", rating: 4.5, cost: "High" },
-                { name: "Tokyo", country: "Japan", image: "🇯🇵", rating: 4.7, cost: "High" },
-                { name: "New York", country: "USA", image: "🇺🇸", rating: 4.6, cost: "Very High" },
-                { name: "London", country: "UK", image: "🇬🇧", rating: 4.4, cost: "High" },
-                { name: "Barcelona", country: "Spain", image: "🇪🇸", rating: 4.5, cost: "Medium" },
-                { name: "Bangkok", country: "Thailand", image: "🇹🇭", rating: 4.3, cost: "Low" },
-                { name: "Rome", country: "Italy", image: "🇮🇹", rating: 4.4, cost: "Medium" },
-                { name: "Dubai", country: "UAE", image: "🇦🇪", rating: 4.6, cost: "High" },
-              ].map((destination, index) => (
-                <div
-                  key={index}
-                  className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => {
-                    setSearchQuery(destination.name);
-                    router.push(`/search/cities?q=${encodeURIComponent(destination.name)}`);
-                  }}
-                >
-                  <div className="text-center">
-                    <div className="text-4xl mb-2">{destination.image}</div>
-                    <h3 className="font-semibold text-gray-900">{destination.name}</h3>
-                    <p className="text-sm text-gray-600 mb-2">{destination.country}</p>
-                    <div className="flex items-center justify-center text-sm mb-2">
-                      <span className="text-yellow-400 mr-1">★</span>
-                      <span>{destination.rating}</span>
-                    </div>
-                    <div
-                      className={`text-xs px-2 py-1 rounded-full ${
-                        destination.cost === "Low"
-                          ? "bg-green-100 text-green-800"
-                          : destination.cost === "Medium"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : destination.cost === "High"
-                              ? "bg-orange-100 text-orange-800"
-                              : "bg-red-100 text-red-800"
-                      }`}
-                    >
-                      {destination.cost} Cost
+              {popularCities.map((destination) => {
+                const costLabel =
+                  destination.costIndex == null
+                    ? null
+                    : destination.costIndex <= 4
+                      ? "Low"
+                      : destination.costIndex <= 7
+                        ? "Medium"
+                        : "High"
+
+                return (
+                  <div
+                    key={destination.id}
+                    className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => {
+                      setSearchQuery(destination.name);
+                      router.push(`/search/cities?q=${encodeURIComponent(destination.name)}`);
+                    }}
+                  >
+                    <div className="text-center">
+                      <div className="w-full h-20 mb-2 rounded-lg overflow-hidden bg-gray-100">
+                        <img
+                          src={getCityImageUrl(destination)}
+                          alt={destination.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = "none"
+                          }}
+                        />
+                      </div>
+                      <h3 className="font-semibold text-gray-900">{destination.name}</h3>
+                      <p className="text-sm text-gray-600 mb-2">{destination.country}</p>
+                      {costLabel && (
+                        <div
+                          className={`text-xs px-2 py-1 rounded-full inline-block ${
+                            costLabel === "Low"
+                              ? "bg-green-100 text-green-800"
+                              : costLabel === "Medium"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-orange-100 text-orange-800"
+                          }`}
+                        >
+                          {costLabel} Cost
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )}

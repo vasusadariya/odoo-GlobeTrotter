@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import connectDB from '../../../../lib/mongodb';
 import User from '../../../../models/User';
-import bcryptjs from 'bcryptjs';
 
 export async function POST(request) {
   try {
@@ -23,13 +22,17 @@ export async function POST(request) {
 
     await connectDB();
 
-    // Hash the provided token to compare with stored hash
-    const hashedToken = bcryptjs.hashSync(token, 10);
-
-    const user = await User.findOne({
-      passwordResetToken: { $exists: true },
-      passwordResetExpires: { $gt: Date.now() }
+    // bcrypt hashes aren't queryable, so fetch every user with a live reset
+    // token and compare the candidate token against each one individually -
+    // matching on the first user found with any valid token (regardless of
+    // whether it's actually theirs) would let one user's reset link reset a
+    // different user's password.
+    const candidates = await User.find({
+      passwordResetToken: { $exists: true, $ne: null },
+      passwordResetExpires: { $gt: Date.now() },
     });
+
+    const user = candidates.find((candidate) => candidate.verifyPasswordResetToken(token));
 
     if (!user) {
       return NextResponse.json(
@@ -38,20 +41,9 @@ export async function POST(request) {
       );
     }
 
-    // Verify token (constant-time comparison)
-    const isTokenValid = bcryptjs.compareSync(token, user.passwordResetToken);
-
-    if (!isTokenValid) {
-      return NextResponse.json(
-        { error: 'Token is invalid or has expired' },
-        { status: 400 }
-      );
-    }
-
     // Update password and clear reset token
     user.password = newPassword;
-    user.passwordResetToken = undefined;
-    user.passwordResetExpires = undefined;
+    user.clearPasswordResetToken();
     user.emailVerified = new Date();
 
     await user.save();

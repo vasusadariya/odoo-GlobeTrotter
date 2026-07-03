@@ -39,18 +39,11 @@ export default function ItineraryBuilderPage() {
   const [searchResults, setSearchResults] = useState([])
   const [isSearching, setIsSearching] = useState(false)
   const [activeSearchSection, setActiveSearchSection] = useState(null)
-  const [imageErrors, setImageErrors] = useState(new Set())
-
-  const [globalSearchQuery, setGlobalSearchQuery] = useState("")
-  const [globalSearchResults, setGlobalSearchResults] = useState([])
-  const [isGlobalSearching, setIsGlobalSearching] = useState(false)
-  const [selectedDestinations, setSelectedDestinations] = useState([])
 
   const [routePreview, setRoutePreview] = useState(null)
   const [isLoadingPreview, setIsLoadingPreview] = useState(false)
 
   const debouncedSearchQuery = useDebounce(searchStates[activeSearchSection] || "", 300)
-  const debouncedGlobalSearch = useDebounce(globalSearchQuery, 300)
   const waypointsKey = JSON.stringify(
     sections.filter((s) => s.coordinates).map((s) => ({ name: s.location || s.title, coordinates: s.coordinates })),
   )
@@ -181,17 +174,13 @@ export default function ItineraryBuilderPage() {
       return
     }
 
-    console.log("Searching places:", { query, sectionId })
     setIsSearching(true)
     try {
       // Using the correct query parameter 'q' as expected by the API
       const response = await fetch(`/api/places/search?q=${encodeURIComponent(query)}`)
       const data = await response.json()
-      console.log("Raw API response:", data)
-      
+
       if (response.ok) {
-        console.log("Search results:", data.places)
-        console.log("Number of results:", data.places?.length || 0)
         setSearchResults(data.places || [])
       } else {
         console.error("Search error:", data)
@@ -205,91 +194,7 @@ export default function ItineraryBuilderPage() {
     }
   }, [])
 
-  // We're now handling search directly in the input handlers,
-  // so we can remove this effect that was using the debounced value
-  /* 
-  useEffect(() => {
-    console.log("Debounced search query changed:", debouncedSearchQuery);
-    searchPlaces(debouncedSearchQuery)
-  }, [debouncedSearchQuery, searchPlaces])
-  */
-
-  const searchGlobalPlaces = async (query) => {
-    if (!query || query.length < 2) {
-      setGlobalSearchResults([])
-      return
-    }
-
-    setIsGlobalSearching(true)
-    try {
-      const response = await fetch(`/api/places/search?q=${encodeURIComponent(query)}`)
-      if (response.ok) {
-        const data = await response.json()
-        setGlobalSearchResults(data.places || [])
-      }
-    } catch (error) {
-      console.error("Error searching places:", error)
-    } finally {
-      setIsGlobalSearching(false)
-    }
-  }
-
-  const selectGlobalPlace = async (place) => {
-    // Get detailed place information
-    const placeData = {
-      place_id: place.id,
-      name: place.name,
-      formatted_address: place.formatted_address,
-      geometry: place.geometry,
-      rating: place.rating,
-      photos: place.photos,
-      types: place.types,
-      price_level: place.price_level,
-    }
-
-    // Check if destination already exists
-    const exists = selectedDestinations.some((dest) => dest.place_id === place.id)
-    if (!exists) {
-      setSelectedDestinations((prev) => [...prev, placeData])
-    }
-
-    setGlobalSearchQuery("")
-    setGlobalSearchResults([])
-  }
-
-  const removeDestination = async (placeId) => {
-    setSelectedDestinations((prev) => prev.filter((dest) => dest.place_id !== placeId))
-
-    // Save the updated destinations to the database
-    try {
-      const updatedDestinations = selectedDestinations.filter((dest) => dest.place_id !== placeId)
-
-      const response = await fetch(`/api/trips/${params.id}/itinerary`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          sections: sections,
-          selectedDestinations: updatedDestinations,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to update destinations")
-      }
-    } catch (error) {
-      console.error("Error updating destinations:", error)
-      // Revert the UI change if database update fails
-      setSelectedDestinations((prev) => [...prev, selectedDestinations.find((dest) => dest.place_id === placeId)])
-    }
-  }
-
   const selectPlace = (sectionId, place) => {
-    console.log("Selecting place:", { sectionId, place });
-    console.log("Place object keys:", Object.keys(place));
-    console.log("Place ID:", place.id, "Place place_id:", place.place_id);
-
     // Simplify place data structure without photos
     const placeData = {
       name: place.name,
@@ -301,45 +206,29 @@ export default function ItineraryBuilderPage() {
       price_level: place.price_level
     };
 
-    console.log("Simplified place data:", placeData);
-
     // Update the section state with the selected place
-    setSections(prevSections => {
-      const newSections = prevSections.map(section => {
-        if (section.id === sectionId) {
-          const updatedSection = {
-            ...section,
-            location: place.formatted_address || place.name,
-            coordinates: place.geometry?.location || null,
-            placeDetails: placeData
-          };
-          console.log("Updated section:", updatedSection);
-          return updatedSection;
-        }
-        return section;
-      });
-      
-      console.log("All sections after update:", newSections);
-      return newSections;
-    });
+    setSections(prevSections =>
+      prevSections.map(section =>
+        section.id === sectionId
+          ? {
+              ...section,
+              location: place.formatted_address || place.name,
+              coordinates: place.geometry?.location || null,
+              placeDetails: placeData
+            }
+          : section
+      )
+    );
 
     // Update the search input to show the selected place name
-    setSearchStates(prev => {
-      const newSearchStates = { ...prev, [sectionId]: place.name };
-      console.log("Updated search states:", newSearchStates);
-      return newSearchStates;
-    });
-    
+    setSearchStates(prev => ({ ...prev, [sectionId]: place.name }));
+
     // Clear search results and active section
     setSearchResults([]);
     setActiveSearchSection(null);
-    
-    
   }
 
   const handleSearchInputChange = (sectionId, value) => {
-    console.log("Search input changed:", { sectionId, value })
-    
     // If user is typing and there was a previously selected location, clear it
     const section = sections.find((s) => s.id === sectionId)
     if (section?.location && section.location !== value) {
@@ -372,7 +261,6 @@ export default function ItineraryBuilderPage() {
   }
 
   const handleSearchInputFocus = (sectionId) => {
-    console.log("Search input focused:", sectionId)
     setActiveSearchSection(sectionId)
     const currentQuery = searchStates[sectionId] || ""
     const section = sections.find((s) => s.id === sectionId)
@@ -393,10 +281,6 @@ export default function ItineraryBuilderPage() {
       setActiveSearchSection(null)
       setSearchResults([])
     }, 300)
-  }
-
-  const handleImageError = (placeId) => {
-    setImageErrors((prev) => new Set([...prev, placeId]))
   }
 
   const addSection = () => {
@@ -456,11 +340,7 @@ export default function ItineraryBuilderPage() {
           placeDetails: section.placeDetails,
           coordinates: section.coordinates,
         })),
-        selectedDestinations: selectedDestinations,
       }
-
-      console.log("Saving itinerary with sections:", itineraryData.sections)
-      console.log("Saving selected destinations:", selectedDestinations)
 
       const response = await fetch(`/api/trips/${params.id}/itinerary`, {
         method: "POST",
@@ -485,11 +365,6 @@ export default function ItineraryBuilderPage() {
     } finally {
       setIsSaving(false)
     }
-  }
-
-  const formatDate = (dateString) => {
-    if (!dateString) return ""
-    return new Date(dateString).toISOString().split("T")[0]
   }
 
   if (status === "loading" || isLoading) {
@@ -587,106 +462,6 @@ export default function ItineraryBuilderPage() {
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-              {/* <h3 className="text-lg font-semibold text-gray-900 mb-4">Search Destinations</h3> */}
-
-              {/* <div className="relative mb-4">
-                <input
-                  type="text"
-                  placeholder="Search for destinations, cities, or countries..."
-                  value={globalSearchQuery}
-                  onChange={(e) => setGlobalSearchQuery(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                />
-                {isGlobalSearching && (
-                  <div className="absolute right-3 top-3">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600"></div>
-                  </div>
-                )}
-
-                {/* Global Search Results Dropdown */}
-                {globalSearchResults.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                    {globalSearchResults.map((place) => (
-                      <div
-                        key={place.id}
-                        onClick={() => selectGlobalPlace(place)}
-                        className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                      >
-                        <div className="flex items-center space-x-3">
-                          {place.photos?.[0] && (
-                            <img
-                              src={`https://maps.googleapis.com/maps/api/place/photo?maxwidth=100&photoreference=${place.photos[0].photo_reference}&key=${process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY}`}
-                              alt={place.name}
-                              className="w-12 h-12 rounded-lg object-cover"
-                              onError={(e) => {
-                                e.target.style.display = "none"
-                              }}
-                            />
-                          )}
-                          <div className="flex-1">
-                            <h4 className="font-medium text-gray-900">{place.name}</h4>
-                            <p className="text-sm text-gray-600">{place.formatted_address}</p>
-                            {place.rating && (
-                              <div className="flex items-center mt-1">
-                                <span className="text-yellow-400">★</span>
-                                <span className="text-sm text-gray-600 ml-1">{place.rating}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              {/* </div> */} 
-
-              {/* Selected Destinations */}
-              {selectedDestinations.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-3">Selected Destinations</h4>
-                  <div className="space-y-2">
-                    {selectedDestinations.map((destination) => (
-                      <div
-                        key={destination.place_id}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                      >
-                        <div className="flex items-center space-x-3">
-                          {destination.photos?.[0] && (
-                            <img
-                              src={`https://maps.googleapis.com/maps/api/place/photo?maxwidth=100&photoreference=${destination.photos[0].photo_reference}&key=${process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY}`}
-                              alt={destination.name}
-                              className="w-10 h-10 rounded-lg object-cover"
-                              onError={(e) => {
-                                e.target.style.display = "none"
-                              }}
-                            />
-                          )}
-                          <div>
-                            <h5 className="font-medium text-gray-900">{destination.name}</h5>
-                            <p className="text-sm text-gray-600">{destination.formatted_address}</p>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => removeDestination(destination.place_id)}
-                          className="text-red-600 hover:text-red-800 p-1"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M6 18L18 6M6 6l12 12"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              
-
               {/* Itinerary Sections */}
               <div className="space-y-6">
                 {sections.map((section, index) => (
@@ -822,8 +597,6 @@ export default function ItineraryBuilderPage() {
                                 onMouseDown={(e) => {
                                   // Use onMouseDown to prevent blur from closing dropdown before click
                                   e.preventDefault();
-                                  console.log("Place clicked, section ID:", section.id);
-                                  console.log("Place data:", place);
                                   selectPlace(section.id, place);
                                 }}
                                 className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors duration-150"

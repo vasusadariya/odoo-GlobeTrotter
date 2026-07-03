@@ -76,27 +76,18 @@ export default function TopRegionalCities() {
     )
   }
   
-  // If no destinations are available, show fallback destinations
-  const displayDestinations = destinations.length > 0 
-    ? destinations 
-    : [
-        {
-          name: "Rome",
-          country: "Italy",
-          count: 12,
-        },
-        {
-          name: "Tokyo",
-          country: "Japan",
-          count: 15,
-        },
-        {
-          name: "Bali",
-          country: "Indonesia",
-          count: 14,
-        }
-      ];
-  
+  if (destinations.length === 0) {
+    return (
+      <div className="bg-gray-50 py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Popular Destinations</p>
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">Your next favorite place awaits</h2>
+          <p className="text-gray-600">No destinations yet - be the first to plan a trip!</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-gray-50 py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -124,7 +115,7 @@ export default function TopRegionalCities() {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {displayDestinations.map((destination, index) => {
+          {destinations.map((destination, index) => {
             const imageUrl = getCityImageUrl(destination);
             
             return (

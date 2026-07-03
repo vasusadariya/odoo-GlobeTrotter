@@ -10,13 +10,17 @@ const UserSchema = new mongoose.Schema(
         },
         firstName: {
             type: String,
-            required: [true, "First name is required"],
+            required: function () {
+                return !this.googleId;
+            },
             trim: true,
             minlength: [2, "First name must be at least 2 characters"],
         },
         lastName: {
             type: String,
-            required: [true, "Last name is required"],
+            required: function () {
+                return !this.googleId;
+            },
             trim: true,
             minlength: [2, "Last name must be at least 2 characters"],
         },
@@ -31,8 +35,11 @@ const UserSchema = new mongoose.Schema(
         },
         phone: {
             type: String,
-            required: [true, "Phone number is required"],
+            required: function () {
+                return !this.googleId;
+            },
             unique: true,
+            sparse: true,
             trim: true,
             match: [/^[+]?[1-9][\d]{0,15}$/, "Invalid phone number"],
             index: true,
@@ -44,13 +51,17 @@ const UserSchema = new mongoose.Schema(
         },
         city: {
             type: String,
-            required: [true, "City is required"],
+            required: function () {
+                return !this.googleId;
+            },
             trim: true,
             minlength: [2, "City must be at least 2 characters"],
         },
         country: {
             type: String,
-            required: [true, "Country is required"],
+            required: function () {
+                return !this.googleId;
+            },
             trim: true,
             minlength: [2, "Country must be at least 2 characters"],
         },
@@ -205,22 +216,6 @@ UserSchema.methods.clearPasswordResetToken = function () {
     this.passwordResetExpires = null;
 };
 
-// Update last login
-UserSchema.methods.updateLastLogin = function () {
-    this.lastLogin = new Date();
-    return this.save();
-};
-
-// Virtual for full name
-UserSchema.virtual("fullName").get(function () {
-    return `${this.firstName} ${this.lastName}`;
-});
-
-// Virtual for display name (prioritizes name, falls back to fullName)
-UserSchema.virtual("displayName").get(function () {
-    return this.name || this.fullName || this.email;
-});
-
 // Transform JSON output
 UserSchema.methods.toJSON = function () {
     const userObject = this.toObject();
@@ -233,31 +228,18 @@ UserSchema.methods.toJSON = function () {
     return userObject;
 };
 
-// Static method to find user by email or phone
-UserSchema.statics.findByEmailOrPhone = function (identifier) {
-    return this.findOne({
-        $or: [
-            { email: identifier.toLowerCase() },
-            { phone: identifier },
-            { phoneNumber: identifier },
-        ],
-    });
-};
-
-// Static method to create user with Google data
+// Static method to create user with Google data. firstName/lastName/phone/
+// city/country are conditionally required (see schema) so they're safe to
+// leave unset here - they get backfilled later via the settings page.
 UserSchema.statics.createFromGoogle = function (googleProfile) {
     return this.create({
         name: googleProfile.name,
-        firstName: googleProfile.given_name || "",
-        lastName: googleProfile.family_name || "",
+        firstName: googleProfile.given_name,
+        lastName: googleProfile.family_name,
         email: googleProfile.email,
         googleId: googleProfile.sub,
         image: googleProfile.picture,
         emailVerified: new Date(),
-        // Set default values for required fields when creating from Google
-        phone: "", // Will need to be updated later
-        city: "", // Will need to be updated later
-        country: "", // Will need to be updated later
     });
 };
 

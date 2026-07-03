@@ -19,7 +19,6 @@ export default function Header() {
     data: null,
   })
   const [visible, setVisible] = useState(false)
-  const [hoveredItem, setHoveredItem] = useState(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false)
   const dropdownRef = useRef(null)

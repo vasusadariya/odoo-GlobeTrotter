@@ -42,12 +42,10 @@ export default function SettingsPage() {
       if (!session) return
 
       try {
-        console.log("Fetching user data for session:", session.user)
         const response = await fetch("/api/user")
 
         if (response.ok) {
           const data = await response.json()
-          console.log("Fetched user data:", data.user)
           setUserData(data.user)
 
           setFormData((prev) => ({
@@ -68,7 +66,6 @@ export default function SettingsPage() {
             },
           }))
         } else {
-          console.log("User not found in database, using session data")
           setFormData((prev) => ({
             ...prev,
             name: session.user.name || "",

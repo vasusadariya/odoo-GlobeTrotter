@@ -65,7 +65,6 @@ export async function POST(request, { params }) {
     }
 
     const body = await request.json()
-    console.log("Received request body:", JSON.stringify(body, null, 2))
 
     const { sections, selectedDestinations } = body
 
@@ -122,8 +121,16 @@ export async function POST(request, { params }) {
       return itineraryItem
     })
 
+    const updateData = {
+      itinerary: processedItinerary,
+    }
+
+    // Only touch trip-level destinations when the client actually sent new
+    // ones - previously this always $set destinations to [] on every save
+    // (including from the itinerary builder, which never sends this field),
+    // silently wiping out the trip's destination list.
     let tripDestinations = []
-    if (selectedDestinations && Array.isArray(selectedDestinations)) {
+    if (selectedDestinations && Array.isArray(selectedDestinations) && selectedDestinations.length > 0) {
       tripDestinations = selectedDestinations.map((dest) => ({
         name: dest.name || "",
         country: dest.formatted_address ? dest.formatted_address.split(", ").pop() : dest.country || "",
@@ -133,11 +140,7 @@ export async function POST(request, { params }) {
         estimatedDays: 1,
         notes: "",
       }))
-    }
-
-    const updateData = {
-      itinerary: processedItinerary,
-      destinations: tripDestinations, // Update trip-level destinations
+      updateData.destinations = tripDestinations
     }
 
     const existingTrip = await Trip.findById(params.id)

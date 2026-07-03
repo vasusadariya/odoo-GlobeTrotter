@@ -7,14 +7,6 @@ import TopRegionalCities from "../components/TopRegionalCities"
 import { motion } from "framer-motion"
 import { Plane, X, Search } from "lucide-react"
 import Footer from "../components/Footer"
-import dynamic from "next/dynamic"
-
-const WorldMap = dynamic(() => import("../components/ui/WorldMap"), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full aspect-[2/1] bg-gray-100 rounded-lg animate-pulse"></div>
-  ),
-})
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -332,37 +324,6 @@ export default function HomePage() {
               budget management, and seamless itinerary sharing. Make planning as exciting as the trip itself.
             </p>
           </div>
-          {/* <div className="mb-12">
-  <WorldMap
-    dots={[
-      {
-        start: { lat: 40.7128, lng: -74.0060 }, // New York
-        end: { lat: 48.8566, lng: 2.3522 }, // Paris
-      },
-      {
-        start: { lat: 48.8566, lng: 2.3522 }, // Paris
-        end: { lat: 41.9028, lng: 12.4964 }, // Rome
-      },
-      {
-        start: { lat: 41.9028, lng: 12.4964 }, // Rome
-        end: { lat: 35.6762, lng: 139.6503 }, // Tokyo
-      },
-      {
-        start: { lat: 35.6762, lng: 139.6503 }, // Tokyo
-        end: { lat: -33.8688, lng: 151.2093 }, // Sydney
-      },
-      {
-        start: { lat: 37.7749, lng: -122.4194 }, // San Francisco
-        end: { lat: 19.4326, lng: -99.1332 }, // Mexico City
-      },
-      {
-        start: { lat: 19.4326, lng: -99.1332 }, // Mexico City
-        end: { lat: -13.1631, lng: -72.5450 }, // Machu Picchu
-      },
-    ]}
-  />
-</div> */}
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-10">
             <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl p-6 shadow-sm">
               <div className="w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center mb-4">

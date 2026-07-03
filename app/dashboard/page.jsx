@@ -74,7 +74,6 @@ export default function DashboardPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ extraPrompt: prompt })
       });
-      console.log(response)
       if (response.ok) {
         const data = await response.json();
         closeModal();

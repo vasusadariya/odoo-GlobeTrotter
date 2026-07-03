@@ -78,13 +78,6 @@ export default function ItineraryViewPage() {
 
   const tripId = params.id.split('/')[0];
 
-  const formatTime = (dateString) => {
-    return new Date(dateString).toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-    })
-  }
-
   const getTypeIcon = (type) => {
     switch (type) {
       case "destination":
@@ -271,8 +264,7 @@ export default function ItineraryViewPage() {
       if (res.ok) {
         const data = await res.json()
         setOptimizationResult(data)
-        console.log('Optimization complete:', data)
-        
+
         // Don't automatically update itinerary - let user apply changes manually
       } else {
         throw new Error('Optimization failed')
@@ -342,23 +334,6 @@ export default function ItineraryViewPage() {
     } finally {
       setRegeneratingId(null)
     }
-  }
-
-  // Calculate the day number based on activity date relative to trip start date
-  const calculateDayNumber = (activityDate) => {
-    if (!trip?.startDate || !activityDate) return 1
-    
-    const tripStart = new Date(trip.startDate)
-    const activityDateObj = new Date(activityDate)
-    
-    // Reset time to start of day for accurate day calculation
-    tripStart.setHours(0, 0, 0, 0)
-    activityDateObj.setHours(0, 0, 0, 0)
-    
-    const timeDiff = activityDateObj.getTime() - tripStart.getTime()
-    const dayDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24))
-    
-    return dayDiff + 1 // Add 1 because Day 1 starts on trip start date
   }
 
   const totalBudget = itinerary.reduce((total, section) => total + (section.budget || 0), 0)
