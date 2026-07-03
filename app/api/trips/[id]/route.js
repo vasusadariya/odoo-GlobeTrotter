@@ -7,7 +7,8 @@ import Trip from "../../../../models/Trip"
 // Force this route to be dynamic
 export const dynamic = "force-dynamic"
 
-export async function GET(request, { params }) {
+export async function GET(request, props) {
+  const params = await props.params;
   try {
     const session = await getServerSession(authOptions)
 
@@ -80,7 +81,8 @@ export async function GET(request, { params }) {
   }
 }
 
-export async function PUT(request, { params }) {
+export async function PUT(request, props) {
+  const params = await props.params;
   try {
     const session = await getServerSession(authOptions)
 
@@ -146,7 +148,8 @@ export async function PUT(request, { params }) {
   }
 }
 
-export async function DELETE(request, { params }) {
+export async function DELETE(request, props) {
+  const params = await props.params;
   try {
     const session = await getServerSession(authOptions)
 

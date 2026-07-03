@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import connectDB from "../../../../../lib/mongodb"
 import CommunityPost from '../../../../../models/CommunityPost';
 
-export async function POST(request, { params }) {
+export async function POST(request, props) {
+  const params = await props.params;
   try {
     const { id } = params;
     

@@ -26,7 +26,8 @@ async function resolveUserAndTrip(tripId) {
   return { user, trip }
 }
 
-export async function GET(request, { params }) {
+export async function GET(request, props) {
+  const params = await props.params;
   const { error, trip, user } = await resolveUserAndTrip(params.id)
   if (error) return error
 
@@ -46,7 +47,8 @@ export async function GET(request, { params }) {
   return NextResponse.json({ expenses })
 }
 
-export async function POST(request, { params }) {
+export async function POST(request, props) {
+  const params = await props.params;
   const { error, trip, user } = await resolveUserAndTrip(params.id)
   if (error) return error
 

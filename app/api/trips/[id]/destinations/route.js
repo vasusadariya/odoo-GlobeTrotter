@@ -8,7 +8,8 @@ import { upsertCityFromDestination } from "../../../../../lib/cityGuide"
 // Force this route to be dynamic
 export const dynamic = "force-dynamic"
 
-export async function POST(request, { params }) {
+export async function POST(request, props) {
+  const params = await props.params;
   try {
     const session = await getServerSession(authOptions)
 
@@ -85,7 +86,8 @@ export async function POST(request, { params }) {
   }
 }
 
-export async function GET(request, { params }) {
+export async function GET(request, props) {
+  const params = await props.params;
   try {
     const session = await getServerSession(authOptions);
     if (!session) {

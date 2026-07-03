@@ -32,7 +32,8 @@ const ITINERARY_ITEM_SCHEMA = {
   },
 };
 
-export async function POST(req, { params }) {
+export async function POST(req, props) {
+  const params = await props.params;
   try {
     const session = await getServerSession(authOptions);
     if (!session) {

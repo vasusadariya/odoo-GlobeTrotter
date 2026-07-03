@@ -36,7 +36,8 @@ async function resolveUserAndExpense(tripId, expenseId) {
   return { user, trip, expense }
 }
 
-export async function PUT(request, { params }) {
+export async function PUT(request, props) {
+  const params = await props.params;
   const { error, expense } = await resolveUserAndExpense(params.id, params.expenseId)
   if (error) return error
 
@@ -65,7 +66,8 @@ export async function PUT(request, { params }) {
   }
 }
 
-export async function DELETE(request, { params }) {
+export async function DELETE(request, props) {
+  const params = await props.params;
   const { error, expense } = await resolveUserAndExpense(params.id, params.expenseId)
   if (error) return error
 

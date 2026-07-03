@@ -10,7 +10,8 @@ import { sendMail } from "../../../../../lib/mail"
 // Force this route to be dynamic
 export const dynamic = "force-dynamic"
 
-export async function POST(request, { params }) {
+export async function POST(request, props) {
+  const params = await props.params;
   try {
     const session = await getServerSession(authOptions)
 

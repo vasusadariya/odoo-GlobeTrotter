@@ -13,7 +13,8 @@ export const dynamic = "force-dynamic"
 // Non-mutating route preview, meant to be called *while building* an
 // itinerary (before anything is saved) - takes an in-progress waypoints
 // array in the body rather than reading trip.itinerary from the DB.
-export async function POST(request, { params }) {
+export async function POST(request, props) {
+  const params = await props.params;
   try {
     const session = await getServerSession(authOptions)
     if (!session) {

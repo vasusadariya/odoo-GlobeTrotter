@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import Link from 'next/link';
 import Button from '../../../../components/ui/Button_1';
 import Input from '../../../../components/ui/Input_1';
 
-export default function ResetPasswordPage({ params }) {
+export default function ResetPasswordPage(props) {
+  const params = use(props.params);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');

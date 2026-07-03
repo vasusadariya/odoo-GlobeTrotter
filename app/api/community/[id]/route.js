@@ -5,7 +5,8 @@ import connectDB from "../../../../lib/mongodb"
 import CommunityPost from '../../../../models/CommunityPost';
 import User from '../../../../models/User';
 
-export async function GET(request, { params }) {
+export async function GET(request, props) {
+  const params = await props.params;
   try {
     const { id } = params;
     
@@ -36,7 +37,8 @@ export async function GET(request, { params }) {
 // Unpublish - only for posts that were generated from a trip (post.trip set)
 // and only by their author. General post editing/deletion is out of scope
 // for this pass.
-export async function DELETE(request, { params }) {
+export async function DELETE(request, props) {
+  const params = await props.params;
   try {
     const session = await getServerSession(authOptions);
 

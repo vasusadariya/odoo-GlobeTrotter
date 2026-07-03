@@ -9,7 +9,8 @@ import { computeWeatherConflictsForTrip } from "../../../../../lib/weatherConfli
 // Force this route to be dynamic
 export const dynamic = "force-dynamic";
 
-export async function GET(req, { params }) {
+export async function GET(req, props) {
+  const params = await props.params;
   try {
     const { id } = params;
     if (!id) return NextResponse.json({ error: "Missing trip id" }, { status: 400 });

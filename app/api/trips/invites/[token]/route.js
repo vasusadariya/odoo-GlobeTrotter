@@ -28,7 +28,8 @@ async function findInviteByToken(token) {
   return null
 }
 
-export async function GET(request, { params }) {
+export async function GET(request, props) {
+  const params = await props.params;
   try {
     await connectDB()
 
@@ -55,7 +56,8 @@ export async function GET(request, { params }) {
   }
 }
 
-export async function POST(request, { params }) {
+export async function POST(request, props) {
+  const params = await props.params;
   try {
     const session = await getServerSession(authOptions)
 

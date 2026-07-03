@@ -33,7 +33,8 @@ async function resolveTraveler(request, tripId) {
   return { user, trip }
 }
 
-export async function GET(request, { params }) {
+export async function GET(request, props) {
+  const params = await props.params;
   const { error, trip } = await resolveTraveler(request, params.id)
   if (error) return error
 
@@ -51,7 +52,8 @@ export async function GET(request, { params }) {
   return NextResponse.json({ comments })
 }
 
-export async function POST(request, { params }) {
+export async function POST(request, props) {
+  const params = await props.params;
   const { error, user, trip } = await resolveTraveler(request, params.id)
   if (error) return error
 

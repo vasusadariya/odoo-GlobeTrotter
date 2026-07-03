@@ -8,7 +8,8 @@ import ItineraryComment from "../../../../../../models/ItineraryComment"
 // Force this route to be dynamic
 export const dynamic = "force-dynamic"
 
-export async function DELETE(request, { params }) {
+export async function DELETE(request, props) {
+  const params = await props.params;
   try {
     const session = await getServerSession(authOptions)
 
