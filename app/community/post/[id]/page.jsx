@@ -18,11 +18,21 @@ export default function PostPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const recordView = async () => {
+    try {
+      await fetch(`/api/community/${id}/view`, {
+        method: "POST",
+      });
+    } catch (err) {
+      console.error("Error recording view:", err);
+    }
+  };
+
   useEffect(() => {
     const fetchPostData = async () => {
       try {
         const response = await fetch(`/api/community/${id}`);
-        
+
         if (!response.ok) {
           if (response.status === 404) {
             throw new Error("Post not found");
@@ -30,10 +40,10 @@ export default function PostPage() {
             throw new Error("Something went wrong");
           }
         }
-        
+
         const data = await response.json();
         setPost(data.post);
-        
+
         // Record view after a short delay
         setTimeout(() => {
           recordView();
@@ -48,16 +58,6 @@ export default function PostPage() {
 
     fetchPostData();
   }, [id]);
-
-  const recordView = async () => {
-    try {
-      await fetch(`/api/community/${id}/view`, {
-        method: "POST",
-      });
-    } catch (err) {
-      console.error("Error recording view:", err);
-    }
-  };
 
   if (loading) {
     return (
@@ -78,7 +78,7 @@ export default function PostPage() {
             {error}
           </h2>
           <p className="text-red-600 mb-4">
-            The post you're looking for might have been removed or doesn't exist.
+            The post you&apos;re looking for might have been removed or doesn&apos;t exist.
           </p>
           <Button
             variant="outline"

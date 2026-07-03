@@ -24,12 +24,6 @@ export default function DashboardPage() {
     if (!session) router.replace("/auth/login"); // Not authenticated
   }, [session, status, router]);
 
-  useEffect(() => {
-    if (session) {
-      fetchTrips();
-    }
-  }, [session]);
-
   const fetchTrips = async () => {
     try {
       const response = await fetch("/api/trips");
@@ -43,6 +37,12 @@ export default function DashboardPage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (session) {
+      fetchTrips();
+    }
+  }, [session]);
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-US", {

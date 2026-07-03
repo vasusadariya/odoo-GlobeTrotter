@@ -15,17 +15,6 @@ export default function TripReadinessPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
 
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.replace("/auth/login")
-      return
-    }
-
-    if (status === "authenticated" && params.id) {
-      fetchReadiness()
-    }
-  }, [status, params.id])
-
   const fetchReadiness = async () => {
     try {
       setIsLoading(true)
@@ -45,6 +34,17 @@ export default function TripReadinessPage() {
       setIsLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.replace("/auth/login")
+      return
+    }
+
+    if (status === "authenticated" && params.id) {
+      fetchReadiness()
+    }
+  }, [status, params.id])
 
   if (status === "loading" || isLoading) {
     return (

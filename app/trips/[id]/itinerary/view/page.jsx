@@ -27,17 +27,6 @@ export default function ItineraryViewPage() {
   const [isOptimized, setIsOptimized] = useState(false)
   const [regeneratingId, setRegeneratingId] = useState(null)
 
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/auth/login")
-      return
-    }
-
-    if (status === "authenticated" && params.id) {
-      fetchItinerary()
-    }
-  }, [status, params.id])
-
   const fetchItinerary = async () => {
     try {
       setIsLoading(true)
@@ -46,7 +35,7 @@ export default function ItineraryViewPage() {
         setError("Invalid trip ID")
         return
       }
-      
+
       // Get the actual trip ID (not 'view')
       const tripId = params.id.split('/')[0];
 
@@ -67,6 +56,17 @@ export default function ItineraryViewPage() {
       setIsLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/login")
+      return
+    }
+
+    if (status === "authenticated" && params.id) {
+      fetchItinerary()
+    }
+  }, [status, params.id])
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -456,7 +456,7 @@ export default function ItineraryViewPage() {
                 />
               </svg>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No Itinerary Found</h3>
-              <p className="text-gray-600 mb-4">This trip doesn't have an itinerary yet.</p>
+              <p className="text-gray-600 mb-4">This trip doesn&apos;t have an itinerary yet.</p>
               <Link href={`/trips/${tripId}/itinerary`}>
                 <Button>Build Itinerary</Button>
               </Link>
@@ -987,7 +987,7 @@ export default function ItineraryViewPage() {
                                   />
                                 </svg>
                                 <h3 className="text-lg font-semibold text-gray-900 mb-2">No Activities Planned</h3>
-                                <p className="text-gray-600">This day doesn't have any activities scheduled yet.</p>
+                                <p className="text-gray-600">This day doesn&apos;t have any activities scheduled yet.</p>
                               </div>
                             )}
                           </>

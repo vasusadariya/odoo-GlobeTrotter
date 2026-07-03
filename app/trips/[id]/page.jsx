@@ -21,17 +21,6 @@ export default function TripDetailPage() {
   const [isPublishing, setIsPublishing] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
 
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.replace("/auth/login")
-      return
-    }
-
-    if (status === "authenticated" && params.id) {
-      fetchTrip()
-    }
-  }, [status, params.id])
-
   const fetchTrip = async () => {
     try {
       setIsLoading(true)
@@ -64,6 +53,17 @@ export default function TripDetailPage() {
       setIsLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.replace("/auth/login")
+      return
+    }
+
+    if (status === "authenticated" && params.id) {
+      fetchTrip()
+    }
+  }, [status, params.id])
 
   const togglePrivacy = async () => {
     if (!trip) return

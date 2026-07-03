@@ -49,46 +49,6 @@ export default function ItineraryBuilderPage() {
   )
   const debouncedWaypointsKey = useDebounce(waypointsKey, 500)
 
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.replace("/auth/login")
-      return
-    }
-
-    if (status === "authenticated" && params.id) {
-      fetchTripAndItinerary()
-    }
-  }, [status, params.id])
-
-  useEffect(() => {
-    const waypoints = JSON.parse(debouncedWaypointsKey || "[]")
-
-    if (waypoints.length < 2 || !params.id || params.id === "undefined") {
-      setRoutePreview(null)
-      return
-    }
-
-    const fetchPreview = async () => {
-      setIsLoadingPreview(true)
-      try {
-        const response = await fetch(`/api/trips/${params.id}/route-preview`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ waypoints }),
-        })
-        if (response.ok) {
-          setRoutePreview(await response.json())
-        }
-      } catch (error) {
-        console.error("Error fetching route preview:", error)
-      } finally {
-        setIsLoadingPreview(false)
-      }
-    }
-
-    fetchPreview()
-  }, [debouncedWaypointsKey, params.id])
-
   const fetchTripAndItinerary = async () => {
     try {
       setIsLoading(true)
@@ -167,6 +127,46 @@ export default function ItineraryBuilderPage() {
       setIsLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.replace("/auth/login")
+      return
+    }
+
+    if (status === "authenticated" && params.id) {
+      fetchTripAndItinerary()
+    }
+  }, [status, params.id])
+
+  useEffect(() => {
+    const waypoints = JSON.parse(debouncedWaypointsKey || "[]")
+
+    if (waypoints.length < 2 || !params.id || params.id === "undefined") {
+      setRoutePreview(null)
+      return
+    }
+
+    const fetchPreview = async () => {
+      setIsLoadingPreview(true)
+      try {
+        const response = await fetch(`/api/trips/${params.id}/route-preview`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ waypoints }),
+        })
+        if (response.ok) {
+          setRoutePreview(await response.json())
+        }
+      } catch (error) {
+        console.error("Error fetching route preview:", error)
+      } finally {
+        setIsLoadingPreview(false)
+      }
+    }
+
+    fetchPreview()
+  }, [debouncedWaypointsKey, params.id])
 
   const searchPlaces = useCallback(async (query, sectionId) => {
     if (!query || query.length < 2) {

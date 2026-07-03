@@ -42,28 +42,24 @@ export default function CommunityPage() {
     };
   }, []);
 
-  useEffect(() => {
-    fetchPosts();
-  }, [sortOrder, selectedTags]);
-
   const fetchPosts = async () => {
     setLoading(true);
     try {
       let url = `/api/community?sort=${sortOrder}`;
-      
+
       if (selectedTags.length > 0) {
         url += `&tags=${selectedTags.join(",")}`;
       }
-      
+
       if (searchTerm) {
         url += `&search=${encodeURIComponent(searchTerm)}`;
       }
-      
+
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error('Failed to fetch posts');
       }
-      
+
       const data = await response.json();
       setPosts(data.posts);
     } catch (error) {
@@ -72,6 +68,10 @@ export default function CommunityPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchPosts();
+  }, [sortOrder, selectedTags]);
 
   const handleSearch = (e) => {
     e.preventDefault();

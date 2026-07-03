@@ -360,7 +360,7 @@ export default function HomePage() {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Collaborative Sharing</h3>
               <p className="text-gray-600">
                 Share your detailed trip plans with friends and family, collaborate on group adventures, and
-                discover inspiration from other travelers' journeys.
+                discover inspiration from other travelers&apos; journeys.
               </p>
             </div>
           </div>

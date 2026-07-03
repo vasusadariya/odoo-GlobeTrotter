@@ -13,17 +13,6 @@ export default function TripsListPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [filter, setFilter] = useState("all")
 
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.replace("/auth/login")
-      return
-    }
-
-    if (status === "authenticated") {
-      fetchTrips()
-    }
-  }, [status])
-
   const fetchTrips = async () => {
     try {
       const response = await fetch("/api/trips")
@@ -37,6 +26,17 @@ export default function TripsListPage() {
       setIsLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.replace("/auth/login")
+      return
+    }
+
+    if (status === "authenticated") {
+      fetchTrips()
+    }
+  }, [status])
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-US", {

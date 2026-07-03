@@ -81,13 +81,13 @@ export default function AcceptInvitePage() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">You're invited!</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">You&apos;re invited!</h1>
         <p className="text-gray-600 mb-1">
           {invite?.inviter?.name || "Someone"} invited you to help plan
         </p>
         <p className="text-xl font-semibold text-gray-900 mb-6">{invite?.trip?.name}</p>
         <p className="text-sm text-gray-500 mb-6">
-          You'll join as a <span className="font-medium">{invite?.role}</span>
+          You&apos;ll join as a <span className="font-medium">{invite?.role}</span>
         </p>
         <Button onClick={acceptInvite} loading={isAccepting} disabled={isAccepting} className="w-full">
           Accept Invite
