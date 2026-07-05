@@ -1,14 +1,235 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import toast from "react-hot-toast"
-import Button from "../../../../../components/ui/Button_1"
+import { motion, useScroll } from "framer-motion"
+import {
+  MapPin,
+  Bed,
+  Car,
+  Utensils,
+  Sparkles,
+  Waypoints,
+  CalendarDays,
+  X,
+  Share2,
+  Wand2,
+  Compass,
+  Star,
+  Clock,
+  Rocket,
+  Flag,
+  Loader2,
+  ListChecks,
+} from "lucide-react"
 import WeatherSuggestions from "../../../../../components/WeatherSuggestions"
 import ItineraryComments from "../../../../../components/ItineraryComments"
+import LogoLoader from "../../../../../components/waypoint/LogoLoader"
+import PhotoTile from "../../../../../components/waypoint/PhotoTile"
+import { getCityImageUrl } from "../../../../../lib/cityImage"
+import { getDayNumber, groupItineraryByDay } from "../../../../../lib/itineraryDays"
+
+const TYPE_ICON = {
+  destination: MapPin,
+  accommodation: Bed,
+  transport: Car,
+  meal: Utensils,
+  activity: Sparkles,
+}
+
+const TYPE_STYLE = {
+  destination: { icon: "bg-blue-100 text-blue-600", border: "border-blue-200", chip: "bg-blue-100 text-blue-800 border-blue-200", dot: "bg-blue-500" },
+  accommodation: { icon: "bg-green-100 text-green-600", border: "border-green-200", chip: "bg-green-100 text-green-800 border-green-200", dot: "bg-green-500" },
+  transport: { icon: "bg-yellow-100 text-yellow-600", border: "border-yellow-200", chip: "bg-yellow-100 text-yellow-800 border-yellow-200", dot: "bg-yellow-500" },
+  meal: { icon: "bg-red-100 text-red-600", border: "border-red-200", chip: "bg-red-100 text-red-800 border-red-200", dot: "bg-red-500" },
+  activity: { icon: "bg-purple-100 text-purple-600", border: "border-purple-200", chip: "bg-purple-100 text-purple-800 border-purple-200", dot: "bg-purple-500" },
+  default: { icon: "bg-gray-100 text-gray-600", border: "border-gray-200", chip: "bg-gray-100 text-gray-800 border-gray-200", dot: "bg-gray-500" },
+}
+
+function getTypeIcon(type) {
+  return TYPE_ICON[type] || Sparkles
+}
+
+function getTypeStyle(type) {
+  return TYPE_STYLE[type] || TYPE_STYLE.default
+}
+
+function getSectionPhoto(section) {
+  if (section?.placeDetails?.photos?.[0]?.url) return section.placeDetails.photos[0].url
+  if (section?.location) return getCityImageUrl({ name: section.location.split(",")[0] })
+  return null
+}
+
+// Owns dispatchRef + useScroll itself so the ref and the hook mount together
+// atomically — calling useScroll in the parent while this section is
+// conditionally rendered (loading state, calendar view, empty state) left
+// the ref unattached during earlier renders and threw "Target ref is
+// defined but not hydrated".
+function FlowchartView({ trip, dayGroups, tripId, regenerateDay, regeneratingId, formatDate }) {
+  const dispatchRef = useRef(null)
+  const { scrollYProgress: routeProgress } = useScroll({
+    target: dispatchRef,
+    offset: ["start 0.75", "end 0.75"],
+  })
+
+  return (
+    <div className="bg-parchment-raised rounded-md shadow-sm border border-ink/10 p-6 sm:p-8">
+      {/* Trip Begins */}
+      <div className="flex items-center gap-3 mb-8">
+        <div className="w-11 h-11 rounded-full bg-brass/10 text-brass flex items-center justify-center flex-shrink-0">
+          <Rocket className="w-5 h-5" />
+        </div>
+        <div>
+          <h3 className="font-display italic text-ink">Trip Begins</h3>
+          <p className="text-sm text-ink/50 font-data">{formatDate(trip?.startDate)}</p>
+        </div>
+      </div>
+
+      <div className="relative pl-4" ref={dispatchRef}>
+        {/* Static route track + brass progress line that draws in on scroll */}
+        <div className="absolute left-[3px] top-1 bottom-1 w-0.5 bg-ink/10" />
+        <motion.div
+          className="absolute left-[3px] top-1 w-0.5 bg-brass origin-top"
+          style={{ scaleY: routeProgress, height: "calc(100% - 0.5rem)" }}
+        />
+
+        <div className="space-y-10">
+          {dayGroups.map((group) => {
+            const thumbPhoto = getSectionPhoto(group.items[0])
+            return (
+              <motion.div
+                key={group.dateKey}
+                className="relative pl-6"
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+              >
+                {/* Day header */}
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="w-[72px] h-[72px] rounded-md overflow-hidden border border-ink/10 flex-shrink-0">
+                    <PhotoTile
+                      src={thumbPhoto}
+                      alt={group.items[0]?.location || `Day ${group.dayNumber}`}
+                      seed={group.items[0]?.location || group.dateKey}
+                      className="h-full w-full"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1 pt-1">
+                    <span className="font-data text-xs uppercase tracking-widest text-brass">Day {group.dayNumber}</span>
+                    <h3 className="font-display italic text-xl text-ink">
+                      {group.items[0]?.title || formatDate(group.date)}
+                    </h3>
+                    <span className="font-data text-xs text-ink/40">{formatDate(group.date)}</span>
+                  </div>
+                </div>
+
+                {/* Items for this day */}
+                <div className="space-y-4">
+                  {group.items.map((section) => {
+                    const style = getTypeStyle(section.type)
+                    const Icon = getTypeIcon(section.type)
+                    return (
+                      <div
+                        key={section.id}
+                        className={`relative bg-parchment-raised rounded-md border ${style.border} p-5 shadow-sm hover:shadow-md transition-shadow`}
+                      >
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-md flex items-center justify-center flex-shrink-0 ${style.icon}`}>
+                              <Icon className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <h3 className="text-lg font-semibold text-ink">{section.title}</h3>
+                              <span className="text-xs text-ink/50 capitalize font-data">{section.type}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {section.budget > 0 && (
+                              <div className="bg-brass/10 text-brass border border-brass/20 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap font-data tabular-nums">
+                                {trip?.currency} {section.budget}
+                              </div>
+                            )}
+                            <button
+                              onClick={() => regenerateDay(section.id)}
+                              disabled={regeneratingId === section.id}
+                              aria-label="Regenerate this day with AI"
+                              title="Regenerate this day with AI"
+                              className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-full border border-brass/25 text-brass bg-brass/5 hover:bg-brass/10 disabled:opacity-50 whitespace-nowrap"
+                            >
+                              {regeneratingId === section.id ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Wand2 className="w-3.5 h-3.5" />
+                              )}
+                              {regeneratingId === section.id ? "Regenerating..." : "Regenerate"}
+                            </button>
+                          </div>
+                        </div>
+
+                        {section.description && (
+                          <p className="text-ink/60 leading-relaxed mb-3">{section.description}</p>
+                        )}
+
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-3 border-t border-ink/10">
+                          {section.location && (
+                            <div>
+                              <div className="text-xs text-ink/40 uppercase tracking-wide font-data">Location</div>
+                              <div className="font-medium text-ink flex items-center gap-1">
+                                <MapPin className="w-3.5 h-3.5 text-ink/30" />
+                                {section.location}
+                              </div>
+                            </div>
+                          )}
+                          {section.duration && (
+                            <div>
+                              <div className="text-xs text-ink/40 uppercase tracking-wide font-data">Duration</div>
+                              <div className="font-medium text-ink flex items-center gap-1">
+                                <Clock className="w-3.5 h-3.5 text-ink/30" />
+                                {section.duration}
+                              </div>
+                            </div>
+                          )}
+                          {section.rating && (
+                            <div>
+                              <div className="text-xs text-ink/40 uppercase tracking-wide font-data">Rating</div>
+                              <div className="font-medium text-ink flex items-center gap-1">
+                                <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
+                                {section.rating}/5
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        <ItineraryComments tripId={tripId} itineraryItemId={section.id} />
+                      </div>
+                    )
+                  })}
+                </div>
+              </motion.div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Trip Complete */}
+      <div className="flex items-center gap-3 mt-8 pt-6 border-t border-ink/10">
+        <div className="w-11 h-11 rounded-full bg-route/10 text-route flex items-center justify-center flex-shrink-0">
+          <Flag className="w-5 h-5" />
+        </div>
+        <div>
+          <h3 className="font-display italic text-ink">Trip Complete</h3>
+          <p className="text-sm text-ink/50 font-data">{formatDate(trip?.endDate)}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function ItineraryViewPage() {
   const { data: session, status } = useSession()
@@ -78,119 +299,6 @@ export default function ItineraryViewPage() {
 
   const tripId = params.id.split('/')[0];
 
-  const getTypeIcon = (type) => {
-    switch (type) {
-      case "destination":
-        return (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-            />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-        )
-      case "accommodation":
-        return (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"
-            />
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M8 21v-4a2 2 0 012-2h4a2 2 0 012 2v4"
-            />
-          </svg>
-        )
-      case "transport":
-        return (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
-            />
-          </svg>
-        )
-      case "meal":
-        return (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-            />
-          </svg>
-        )
-      default:
-        return (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-        )
-    }
-  }
-
-  const getTypeColor = (type) => {
-    switch (type) {
-      case "destination":
-        return "from-blue-500 to-blue-600"
-      case "accommodation":
-        return "from-green-500 to-green-600"
-      case "transport":
-        return "from-yellow-500 to-yellow-600"
-      case "meal":
-        return "from-red-500 to-red-600"
-      case "activity":
-        return "from-purple-500 to-purple-600"
-      default:
-        return "from-gray-500 to-gray-600"
-    }
-  }
-
-  const getTypeBorderColor = (type) => {
-    switch (type) {
-      case "destination":
-        return "border-blue-200"
-      case "accommodation":
-        return "border-green-200"
-      case "transport":
-        return "border-yellow-200"
-      case "meal":
-        return "border-red-200"
-      case "activity":
-        return "border-purple-200"
-      default:
-        return "border-gray-200"
-    }
-  }
-
-  const getEventColor = (type) => {
-    switch (type) {
-      case "destination":
-        return "bg-blue-100 text-blue-800 border-blue-200"
-      case "accommodation":
-        return "bg-green-100 text-green-800 border-green-200"
-      case "transport":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200"
-      case "meal":
-        return "bg-red-100 text-red-800 border-red-200"
-      case "activity":
-        return "bg-purple-100 text-purple-800 border-purple-200"
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200"
-    }
-  }
-
   // Calendar helper functions
   const getCalendarDays = () => {
     if (!trip?.startDate || !trip?.endDate) return []
@@ -249,18 +357,18 @@ export default function ItineraryViewPage() {
     setShowOptimizeModal(true)
     setIsOptimizing(true)
     setOptimizationResult(null)
-    
+
     try {
       const res = await fetch('/api/optimize', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          tripId: params.id 
+        body: JSON.stringify({
+          tripId: params.id
         })
       })
-      
+
       if (res.ok) {
         const data = await res.json()
         setOptimizationResult(data)
@@ -336,25 +444,34 @@ export default function ItineraryViewPage() {
     }
   }
 
+  const shareTrip = async () => {
+    try {
+      const shareUrl = `${window.location.origin}/trips/${tripId}`
+      await navigator.clipboard.writeText(shareUrl)
+      toast.success("Link copied — anyone with access to this trip can open it")
+    } catch (error) {
+      console.error("Error copying share link:", error)
+      toast.error("Failed to copy link")
+    }
+  }
+
   const totalBudget = itinerary.reduce((total, section) => total + (section.budget || 0), 0)
+  const dayGroups = trip?.startDate ? groupItineraryByDay(itinerary, trip.startDate) : []
 
   if (status === "loading" || isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading itinerary...</p>
-        </div>
+      <div className="min-h-screen bg-parchment flex items-center justify-center">
+        <LogoLoader caption="Loading itinerary…" />
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-parchment flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-16 h-16 bg-route/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-route" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -363,10 +480,10 @@ export default function ItineraryViewPage() {
               />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Error Loading Itinerary</h1>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <Link href="/dashboard">
-            <Button>Back to Dashboard</Button>
+          <h1 className="text-2xl font-display italic text-ink mb-2">Error Loading Itinerary</h1>
+          <p className="text-ink/60 mb-6">{error}</p>
+          <Link href="/dashboard" className="inline-flex items-center rounded-md bg-brass px-5 py-2.5 text-sm font-semibold text-white hover:bg-brass-light">
+            Back to Dashboard
           </Link>
         </div>
       </div>
@@ -374,369 +491,123 @@ export default function ItineraryViewPage() {
   }
 
   return (
-
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-[65%_35%]">
+    <div className="min-h-screen bg-parchment">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8">
 
         {/* Main Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          
+        <div>
+
           {/* Trip Header */}
           <div className="mb-8">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Trip Itinerary</h1>
-                <p className="text-lg text-gray-600">{trip?.name}</p>
-                <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                <p className="mb-2 flex items-center gap-2 font-data text-xs uppercase tracking-widest text-brass">
+                  <span className="h-px w-7 bg-brass" />
+                  Dispatch
+                </p>
+                <h1 className="text-3xl font-display italic text-ink mb-1">{trip?.name}</h1>
+                <div className="flex items-center flex-wrap gap-x-4 gap-y-1 mt-2 text-sm text-ink/50 font-data tabular-nums">
                   <span>
-                    {formatDate(trip?.startDate)} - {formatDate(trip?.endDate)}
+                    {formatDate(trip?.startDate)} – {formatDate(trip?.endDate)}
                   </span>
-                  <span>•</span>
-                  <span className="font-semibold text-green-600">
-                    Total Budget: {trip?.currency} {totalBudget.toFixed(2)}
+                  <span>·</span>
+                  <span className="font-semibold text-brass">
+                    {trip?.currency} {totalBudget.toFixed(2)}
                   </span>
                 </div>
-
               </div>
 
-
               {/* View Mode Toggle */}
-              <div className="flex items-center space-x-2 bg-white rounded-xl p-1 shadow-lg border border-gray-200">
+              <div className="flex items-center space-x-1 bg-parchment-raised rounded-md p-1 shadow-sm border border-ink/10 self-start">
                 <button
                   onClick={() => setViewMode("flowchart")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded text-sm font-medium transition-colors duration-200 ${
                     viewMode === "flowchart"
-                      ? "bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-md"
-                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                      ? "bg-ink text-parchment shadow-sm"
+                      : "text-ink/60 hover:text-ink hover:bg-parchment-sunken"
                   }`}
                 >
-                  <svg className="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-
-                      d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m0 11V9m0 0L9 7"
-                    />
-                  </svg>
+                  <Waypoints className="w-4 h-4" />
                   Flow
                 </button>
                 <button
                   onClick={() => setViewMode("calendar")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded text-sm font-medium transition-colors duration-200 ${
                     viewMode === "calendar"
-                      ? "bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-md"
-                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                      ? "bg-ink text-parchment shadow-sm"
+                      : "text-ink/60 hover:text-ink hover:bg-parchment-sunken"
                   }`}
                 >
-                  <svg className="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
+                  <CalendarDays className="w-4 h-4" />
                   Calendar
                 </button>
               </div>
-
             </div>
           </div>
 
           {itinerary.length === 0 ? (
-            <div className="text-center py-12">
-              <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                />
-              </svg>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Itinerary Found</h3>
-              <p className="text-gray-600 mb-4">This trip doesn&apos;t have an itinerary yet.</p>
-              <Link href={`/trips/${tripId}/itinerary`}>
-                <Button>Build Itinerary</Button>
+            <div className="text-center py-12 bg-parchment-raised rounded-md border border-ink/10 shadow-sm">
+              <ListChecks className="w-16 h-16 text-ink/20 mx-auto mb-4" />
+              <h3 className="text-lg font-display italic text-ink mb-2">No Itinerary Found</h3>
+              <p className="text-ink/60 mb-4">This trip doesn&apos;t have an itinerary yet.</p>
+              <Link href={`/trips/${tripId}/itinerary`} className="inline-flex items-center rounded-md bg-brass px-5 py-2.5 text-sm font-semibold text-white hover:bg-brass-light">
+                Build Itinerary
               </Link>
             </div>
           ) : (
             <>
-              {/* Enhanced Flowchart View */}
+              {/* Flowchart / Day-grouped View */}
               {viewMode === "flowchart" && (
-                <div className="relative">
-                  {/* Background Pattern */}
-                  <div className="absolute inset-0 opacity-5">
-                    <div
-                      className="absolute inset-0"
-                      style={{
-                        backgroundImage: `radial-gradient(circle at 1px 1px, rgba(59, 130, 246, 0.3) 1px, transparent 0)`,
-                        backgroundSize: "20px 20px",
-                      }}
-                    ></div>
-                  </div>
-
-                  <div className="relative bg-white rounded-3xl shadow-xl border border-gray-100 p-8 overflow-hidden">
-                    {/* Decorative Elements */}
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full opacity-10 -translate-y-16 translate-x-16"></div>
-                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-green-400 to-blue-500 rounded-full opacity-10 translate-y-12 -translate-x-12"></div>
-
-                    <div className="relative flex flex-col items-center space-y-8">
-                      {/* Trip Start */}
-                      <div className="flex flex-col items-center">
-                        <div className="relative">
-                          <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-green-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg ring-4 ring-emerald-100">
-                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                              />
-                            </svg>
-                          </div>
-                          <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center">
-                            <span className="text-xs font-bold text-yellow-900">🚀</span>
-                          </div>
-                        </div>
-                        <div className="text-center mt-4">
-                          <h3 className="font-bold text-gray-900 text-lg">Trip Begins</h3>
-                          <p className="text-sm text-gray-600">{formatDate(trip?.startDate)}</p>
-                          <div className="mt-2 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                            Budget: {trip?.currency} {totalBudget.toFixed(2)}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Connecting Line with Animation */}
-                      <div className="relative">
-                        <div className="w-1 h-12 bg-gradient-to-b from-emerald-500 to-blue-500 rounded-full"></div>
-                        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-blue-500 rounded-full animate-bounce"></div>
-                      </div>
-
-                      {/* Activities Flow */}
-                      {itinerary.map((section, index) => (
-                        <div key={section.id} className="flex flex-col items-center space-y-6 w-full max-w-2xl">
-                          {/* Activity Node */}
-                          <div className="relative group">
-                            {/* Main Activity Card */}
-                            <div
-                              className={`relative bg-white rounded-2xl shadow-lg border-2 ${getTypeBorderColor(section.type)} p-6 transform transition-all duration-300 hover:scale-105 hover:shadow-xl`}
-                            >
-                              {/* Activity Header */}
-                              <div className="flex items-start justify-between mb-4">
-                                <div className="flex items-center space-x-4">
-                                  {/* Icon Circle */}
-                                  <div
-                                    className={`w-12 h-12 bg-gradient-to-br ${getTypeColor(section.type)} rounded-xl flex items-center justify-center text-white shadow-md`}
-                                  >
-                                    {getTypeIcon(section.type)}
-
-                                  </div>
-
-                                  {/* Day Badge */}
-                                  <div className="flex flex-col">
-                                    <div className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-bold">
-                                      Day {index + 1}
-                                    </div>
-                                    <span className="text-xs text-gray-500 mt-1 capitalize">{section.type}</span>
-                                  </div>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                  {/* Budget Badge */}
-                                  {section.budget > 0 && (
-                                    <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-full shadow-md">
-                                      <div className="text-sm font-bold">
-                                        {trip?.currency} {section.budget}
-                                      </div>
-                                      <div className="text-xs opacity-90">Budget</div>
-                                    </div>
-                                  )}
-                                  <button
-                                    onClick={() => regenerateDay(section.id)}
-                                    disabled={regeneratingId === section.id}
-                                    title="Regenerate this day with AI"
-                                    className="text-xs px-3 py-1.5 rounded-full border border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100 disabled:opacity-50 whitespace-nowrap"
-                                  >
-                                    {regeneratingId === section.id ? "Regenerating..." : "✨ Regenerate"}
-                                  </button>
-                                </div>
-                              </div>
-
-                              {/* Activity Content */}
-                              <div className="space-y-3">
-                                <h3 className="text-xl font-bold text-gray-900">{section.title}</h3>
-                                <p className="text-gray-600 leading-relaxed">{section.description}</p>
-
-                                {/* Activity Details */}
-                                <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-100">
-                                  <div>
-                                    <div className="text-xs text-gray-500 uppercase tracking-wide">Date</div>
-                                    <div className="font-semibold text-gray-900">{formatDate(section.startDate)}</div>
-                                  </div>
-                                  {section.location && (
-                                    <div>
-                                      <div className="text-xs text-gray-500 uppercase tracking-wide">Location</div>
-                                      <div className="font-semibold text-gray-900 flex items-center">
-                                        <svg
-                                          className="w-4 h-4 mr-1 text-gray-400"
-                                          fill="none"
-                                          stroke="currentColor"
-                                          viewBox="0 0 24 24"
-                                        >
-                                          <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                                          />
-                                          <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                                          />
-                                        </svg>
-                                        {section.location}
-                                      </div>
-                                    </div>
-                                  )}
-                                  {section.duration && (
-                                    <div>
-                                      <div className="text-xs text-gray-500 uppercase tracking-wide">Duration</div>
-                                      <div className="font-semibold text-gray-900">{section.duration}</div>
-                                    </div>
-                                  )}
-                                  {section.rating && (
-                                    <div>
-                                      <div className="text-xs text-gray-500 uppercase tracking-wide">Rating</div>
-                                      <div className="font-semibold text-gray-900 flex items-center">
-                                        <span className="text-yellow-400 mr-1">★</span>
-                                        {section.rating}/5
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-
-                                <ItineraryComments tripId={tripId} itineraryItemId={section.id} />
-                              </div>
-
-                              {/* Decorative Corner */}
-                              <div
-                                className={`absolute top-0 right-0 w-16 h-16 bg-gradient-to-br ${getTypeColor(section.type)} opacity-10 rounded-bl-full`}
-                              ></div>
-                            </div>
-
-                            {/* Connecting Line to Next Activity */}
-                            {index < itinerary.length - 1 && (
-                              <div className="flex justify-center mt-6">
-                                <div className="relative">
-                                  <div className="w-1 h-16 bg-gradient-to-b from-blue-400 to-purple-500 rounded-full"></div>
-                                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                                    <div className="w-4 h-4 bg-white border-2 border-blue-400 rounded-full"></div>
-                                  </div>
-                                  {/* Arrow */}
-                                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1">
-                                    <svg className="w-4 h-4 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
-                                      <path
-                                        fillRule="evenodd"
-                                        d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L11 6.414V16a1 1 0 11-2 0V6.414L7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3z"
-                                        clipRule="evenodd"
-                                        transform="rotate(180 10 10)"
-                                      />
-                                    </svg>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-
-                      {/* Final Connecting Line */}
-                      <div className="relative">
-                        <div className="w-1 h-12 bg-gradient-to-b from-purple-500 to-red-500 rounded-full"></div>
-                        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                      </div>
-
-                      {/* Trip End */}
-                      <div className="flex flex-col items-center">
-                        <div className="relative">
-                          <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-pink-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg ring-4 ring-red-100">
-                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                          </div>
-                          <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center">
-                            <span className="text-xs font-bold text-yellow-900">🏁</span>
-                          </div>
-                        </div>
-                        <div className="text-center mt-4">
-                          <h3 className="font-bold text-gray-900 text-lg">Trip Complete</h3>
-                          <p className="text-sm text-gray-600">{formatDate(trip?.endDate)}</p>
-                          <div className="mt-2 px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">
-                            Total Spent: {trip?.currency} {totalBudget.toFixed(2)}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <FlowchartView
+                  trip={trip}
+                  dayGroups={dayGroups}
+                  tripId={tripId}
+                  regenerateDay={regenerateDay}
+                  regeneratingId={regeneratingId}
+                  formatDate={formatDate}
+                />
               )}
 
-              {/* macOS Calendar Style View */}
+              {/* Calendar View */}
               {viewMode === "calendar" && (
-                <div
-                  className="flex bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
-                  style={{ minHeight: "600px" }}
-                >
+                <div className="flex flex-col md:flex-row bg-parchment-raised rounded-md shadow-sm border border-ink/10 overflow-hidden">
                   {/* Sidebar - Calendar Categories */}
-                  <div className="w-64 bg-gray-50 border-r border-gray-200 p-4">
+                  <div className="w-full md:w-64 bg-parchment-sunken border-b md:border-b-0 md:border-r border-ink/10 p-4">
                     <div className="mb-6">
-                      <h3 className="text-sm font-semibold text-gray-900 mb-3">Trip Calendar</h3>
+                      <h3 className="text-sm font-semibold text-ink mb-3">Trip Calendar</h3>
                       <div className="space-y-2">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 bg-blue-500 rounded-sm"></div>
-                          <span className="text-sm text-gray-700">Destinations</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 bg-green-500 rounded-sm"></div>
-                          <span className="text-sm text-gray-700">Accommodation</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 bg-yellow-500 rounded-sm"></div>
-                          <span className="text-sm text-gray-700">Transport</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 bg-red-500 rounded-sm"></div>
-                          <span className="text-sm text-gray-700">Meals</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 bg-purple-500 rounded-sm"></div>
-                          <span className="text-sm text-gray-700">Activities</span>
-                        </div>
+                        {Object.entries({
+                          destination: "Destinations",
+                          accommodation: "Accommodation",
+                          transport: "Transport",
+                          meal: "Meals",
+                          activity: "Activities",
+                        }).map(([type, label]) => (
+                          <div key={type} className="flex items-center space-x-2">
+                            <div className={`w-3 h-3 rounded-sm ${getTypeStyle(type).dot}`}></div>
+                            <span className="text-sm text-ink/70">{label}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
 
                     {/* Budget Summary */}
-                    <div className="bg-white rounded-lg p-3 border border-gray-200">
-                      <h4 className="text-sm font-semibold text-gray-900 mb-2">Budget Summary</h4>
-                      <div className="text-lg font-bold text-green-600">
+                    <div className="bg-parchment-raised rounded-md p-3 border border-ink/10">
+                      <h4 className="text-sm font-semibold text-ink mb-2">Budget Summary</h4>
+                      <div className="text-lg font-semibold text-brass font-data tabular-nums">
                         {trip?.currency} {totalBudget.toFixed(2)}
                       </div>
-                      <div className="text-xs text-gray-500">Total Trip Budget</div>
+                      <div className="text-xs text-ink/40">Total Trip Budget</div>
                     </div>
 
                     {/* Mini Calendar */}
                     <div className="mt-6">
-                      <div className="text-sm font-semibold text-gray-900 mb-2">
+                      <div className="text-sm font-semibold text-ink mb-2">
                         {new Date(trip?.startDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                       </div>
                       <div className="grid grid-cols-7 gap-1 text-xs">
-                        {["S", "M", "T", "W", "T", "F", "S"].map((day) => (
-                          <div key={day} className="text-center text-gray-500 font-medium py-1">
+                        {["S", "M", "T", "W", "T", "F", "S"].map((day, i) => (
+                          <div key={`${day}-${i}`} className="text-center text-ink/40 font-medium py-1">
                             {day}
                           </div>
                         ))}
@@ -748,12 +619,12 @@ export default function ItineraryViewPage() {
                             return (
                               <div
                                 key={index}
-                                className={`text-center py-1 text-xs ${
+                                className={`text-center py-1 text-xs font-data ${
                                   isInTrip
                                     ? hasActivities
-                                      ? "bg-blue-500 text-white rounded"
-                                      : "bg-blue-100 text-blue-800 rounded"
-                                    : "text-gray-400"
+                                      ? "bg-brass text-white rounded"
+                                      : "bg-brass/10 text-brass rounded"
+                                    : "text-ink/30"
                                 }`}
                               >
                                 {date.getDate()}
@@ -767,7 +638,7 @@ export default function ItineraryViewPage() {
                   {/* Main Calendar Grid */}
                   <div className="flex-1 p-6">
                     <div className="mb-6">
-                      <h2 className="text-2xl font-bold text-gray-900">
+                      <h2 className="text-2xl font-display italic text-ink">
                         {new Date(trip?.startDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                       </h2>
                     </div>
@@ -775,14 +646,14 @@ export default function ItineraryViewPage() {
                     {/* Calendar Header */}
                     <div className="grid grid-cols-7 gap-px mb-2">
                       {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                        <div key={day} className="text-center text-sm font-medium text-gray-500 py-2">
+                        <div key={day} className="text-center text-sm font-medium text-ink/40 py-2">
                           {day}
                         </div>
                       ))}
                     </div>
 
                     {/* Calendar Grid */}
-                    <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-lg overflow-hidden">
+                    <div className="grid grid-cols-7 gap-px bg-ink/10 rounded-md overflow-hidden">
                       {getCalendarDays().map((date, index) => {
                         const dayActivities = getActivitiesForDate(date)
                         const isInTrip = isDateInTripRange(date)
@@ -792,15 +663,15 @@ export default function ItineraryViewPage() {
                         return (
                           <div
                             key={index}
-                            className={`bg-white min-h-[120px] p-2 cursor-pointer hover:bg-gray-50 transition-colors ${
-                              !isCurrentMonth ? "bg-gray-50" : ""
-                            } ${isToday ? "bg-blue-50 border-2 border-blue-200" : ""}`}
+                            className={`bg-parchment-raised min-h-[120px] p-2 cursor-pointer hover:bg-parchment-sunken transition-colors ${
+                              !isCurrentMonth ? "bg-parchment-sunken" : ""
+                            } ${isToday ? "bg-brass/5 border-2 border-brass/30" : ""}`}
                             onClick={() => handleDayClick(date, dayActivities)}
                           >
                             {/* Date Number */}
                             <div
-                              className={`text-sm font-medium mb-1 ${
-                                !isCurrentMonth ? "text-gray-400" : isInTrip ? "text-gray-900" : "text-gray-600"
+                              className={`text-sm font-medium mb-1 font-data ${
+                                !isCurrentMonth ? "text-ink/30" : isInTrip ? "text-ink" : "text-ink/50"
                               }`}
                             >
                               {date.getDate()}
@@ -808,23 +679,23 @@ export default function ItineraryViewPage() {
 
                             {/* Activities */}
                             <div className="space-y-1">
-                              {dayActivities.slice(0, 3).map((activity, actIndex) => (
+                              {dayActivities.slice(0, 3).map((activity) => (
                                 <div
                                   key={activity.id}
-                                  className={`text-xs px-2 py-1 rounded-md border ${getEventColor(activity.type)} truncate cursor-pointer hover:shadow-sm transition-shadow`}
+                                  className={`text-xs px-2 py-1 rounded-md border ${getTypeStyle(activity.type).chip} truncate cursor-pointer hover:shadow-sm transition-shadow`}
                                   title={`${activity.title} - ${activity.budget > 0 ? `${trip?.currency}${activity.budget}` : "No budget"}`}
                                 >
                                   {activity.title}
                                 </div>
                               ))}
                               {dayActivities.length > 3 && (
-                                <div className="text-xs text-gray-500 px-2">+{dayActivities.length - 3} more</div>
+                                <div className="text-xs text-ink/40 px-2 font-data">+{dayActivities.length - 3} more</div>
                               )}
                             </div>
 
                             {/* Daily Budget */}
                             {dayActivities.length > 0 && (
-                              <div className="mt-2 text-xs text-green-600 font-medium">
+                              <div className="mt-2 text-xs text-brass font-medium font-data tabular-nums">
                                 {trip?.currency}
                                 {dayActivities.reduce((sum, act) => sum + (act.budget || 0), 0).toFixed(0)}
                               </div>
@@ -839,13 +710,13 @@ export default function ItineraryViewPage() {
 
               {/* Day Detail Modal */}
               {showDayModal && selectedDate && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                  <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+                <div className="fixed inset-0 bg-ink/60 flex items-center justify-center z-50 p-4">
+                  <div className="bg-parchment-raised rounded-md shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
                     {/* Modal Header */}
-                    <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6">
+                    <div className="bg-ink text-parchment p-6">
                       <div className="flex items-center justify-between">
                         <div>
-                          <h2 className="text-2xl font-bold">
+                          <h2 className="text-2xl font-display italic">
                             {selectedDate.toLocaleDateString("en-US", {
                               weekday: "long",
                               month: "long",
@@ -853,15 +724,16 @@ export default function ItineraryViewPage() {
                               year: "numeric",
                             })}
                           </h2>
-                          <p className="text-blue-100 mt-1">
-                            Day {Math.ceil((selectedDate - new Date(trip?.startDate)) / (1000 * 60 * 60 * 24)) + 1} of
-                            your trip
+                          <p className="text-parchment/60 mt-1 font-data text-sm">
+                            Day {getDayNumber(selectedDate, trip?.startDate)} of your trip
                           </p>
                         </div>
-                        <button onClick={closeDayModal} className="text-white hover:text-gray-200 transition-colors">
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
+                        <button
+                          onClick={closeDayModal}
+                          aria-label="Close"
+                          className="text-parchment hover:text-brass-light transition-colors"
+                        >
+                          <X className="w-6 h-6" />
                         </button>
                       </div>
                     </div>
@@ -875,119 +747,79 @@ export default function ItineraryViewPage() {
                         return (
                           <>
                             {/* Day Summary */}
-                            <div className="flex items-center justify-between mb-6 p-4 bg-gray-50 rounded-xl">
+                            <div className="flex items-center justify-between mb-6 p-4 bg-parchment-sunken rounded-md">
                               <div>
-                                <h3 className="font-semibold text-gray-900">
+                                <h3 className="font-semibold text-ink">
                                   {dayActivities.length} {dayActivities.length === 1 ? "Activity" : "Activities"} Planned
                                 </h3>
-                                <p className="text-sm text-gray-600">Full day itinerary</p>
+                                <p className="text-sm text-ink/50">Full day itinerary</p>
                               </div>
                               <div className="text-right">
-                                <div className="text-2xl font-bold text-green-600">
+                                <div className="text-2xl font-semibold text-brass font-data tabular-nums">
                                   {trip?.currency} {dayBudget.toFixed(2)}
                                 </div>
-                                <div className="text-sm text-gray-500">Daily Budget</div>
+                                <div className="text-sm text-ink/40">Daily Budget</div>
                               </div>
                             </div>
 
                             {/* Activities List */}
                             <div className="space-y-4">
-                              {dayActivities.map((activity, index) => (
-                                <div
-                                  key={activity.id}
-                                  className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow"
-                                >
-                                  <div className="flex items-start space-x-4">
-                                    {/* Activity Icon */}
-                                    <div
-                                      className={`w-12 h-12 bg-gradient-to-br ${getTypeColor(activity.type)} rounded-xl flex items-center justify-center text-white flex-shrink-0`}
-                                    >
-                                      {getTypeIcon(activity.type)}
-                                    </div>
-
-                                    {/* Activity Details */}
-                                    <div className="flex-1">
-                                      <div className="flex items-start justify-between">
-                                        <div>
-                                          <h4 className="font-semibold text-gray-900 text-lg">{activity.title}</h4>
-                                          <p className="text-sm text-gray-600 capitalize mb-2">{activity.type}</p>
-                                          <p className="text-gray-700 mb-3">{activity.description}</p>
-                                        </div>
-                                        {activity.budget > 0 && (
-                                          <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
-                                            {trip?.currency} {activity.budget}
-                                          </div>
-                                        )}
+                              {dayActivities.map((activity) => {
+                                const style = getTypeStyle(activity.type)
+                                const Icon = getTypeIcon(activity.type)
+                                return (
+                                  <div
+                                    key={activity.id}
+                                    className="border border-ink/10 rounded-md p-4 hover:shadow-md transition-shadow"
+                                  >
+                                    <div className="flex items-start space-x-4">
+                                      {/* Activity Icon */}
+                                      <div className={`w-12 h-12 rounded-md flex items-center justify-center flex-shrink-0 ${style.icon}`}>
+                                        <Icon className="w-5 h-5" />
                                       </div>
 
-                                      {/* Activity Meta */}
-                                      <div className="grid grid-cols-2 gap-4 text-sm">
-                                        {activity.location && (
-                                          <div className="flex items-center text-gray-600">
-                                            <svg
-                                              className="w-4 h-4 mr-2"
-                                              fill="none"
-                                              stroke="currentColor"
-                                              viewBox="0 0 24 24"
-                                            >
-                                              <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                                              />
-                                              <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                                              />
-                                            </svg>
-                                            {activity.location}
+                                      {/* Activity Details */}
+                                      <div className="flex-1">
+                                        <div className="flex items-start justify-between">
+                                          <div>
+                                            <h4 className="font-semibold text-ink text-lg">{activity.title}</h4>
+                                            <p className="text-sm text-ink/50 capitalize mb-2">{activity.type}</p>
+                                            <p className="text-ink/70 mb-3">{activity.description}</p>
                                           </div>
-                                        )}
-                                        {activity.duration && (
-                                          <div className="flex items-center text-gray-600">
-                                            <svg
-                                              className="w-4 h-4 mr-2"
-                                              fill="none"
-                                              stroke="currentColor"
-                                              viewBox="0 0 24 24"
-                                            >
-                                              <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                                              />
-                                            </svg>
-                                            {activity.duration}
-                                          </div>
-                                        )}
+                                          {activity.budget > 0 && (
+                                            <div className="bg-brass/10 text-brass px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap font-data tabular-nums">
+                                              {trip?.currency} {activity.budget}
+                                            </div>
+                                          )}
+                                        </div>
+
+                                        {/* Activity Meta */}
+                                        <div className="grid grid-cols-2 gap-4 text-sm">
+                                          {activity.location && (
+                                            <div className="flex items-center text-ink/60">
+                                              <MapPin className="w-4 h-4 mr-2" />
+                                              {activity.location}
+                                            </div>
+                                          )}
+                                          {activity.duration && (
+                                            <div className="flex items-center text-ink/60">
+                                              <Clock className="w-4 h-4 mr-2" />
+                                              {activity.duration}
+                                            </div>
+                                          )}
+                                        </div>
                                       </div>
                                     </div>
                                   </div>
-                                </div>
-                              ))}
+                                )
+                              })}
                             </div>
 
                             {dayActivities.length === 0 && (
                               <div className="text-center py-8">
-                                <svg
-                                  className="w-16 h-16 text-gray-400 mx-auto mb-4"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                  />
-                                </svg>
-                                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Activities Planned</h3>
-                                <p className="text-gray-600">This day doesn&apos;t have any activities scheduled yet.</p>
+                                <CalendarDays className="w-16 h-16 text-ink/20 mx-auto mb-4" />
+                                <h3 className="text-lg font-display italic text-ink mb-2">No Activities Planned</h3>
+                                <p className="text-ink/60">This day doesn&apos;t have any activities scheduled yet.</p>
                               </div>
                             )}
                           </>
@@ -996,17 +828,18 @@ export default function ItineraryViewPage() {
                     </div>
 
                     {/* Modal Footer */}
-                    <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
+                    <div className="bg-parchment-sunken px-6 py-4 flex justify-end space-x-3">
                       <button
                         onClick={closeDayModal}
-                        className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        className="px-4 py-2 text-ink bg-parchment-raised border border-ink/15 rounded-md hover:bg-parchment transition-colors"
                       >
                         Close
                       </button>
-                      <Link href={`/trips/${tripId}/itinerary`}>
-                        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                          Edit Day
-                        </button>
+                      <Link
+                        href={`/trips/${tripId}/itinerary`}
+                        className="px-4 py-2 bg-brass text-white rounded-md hover:bg-brass-light transition-colors"
+                      >
+                        Edit Day
                       </Link>
                     </div>
                   </div>
@@ -1014,51 +847,55 @@ export default function ItineraryViewPage() {
               )}
 
               {/* Action Buttons */}
-              <div className="mt-8 flex justify-center space-x-4">
-                <Link href={`/trips/${tripId}/itinerary`}>
-                  <Button variant="outline" className="px-6 py-3 bg-transparent">
-                    Edit Itinerary
-                  </Button>
+              <div className="mt-8 flex flex-wrap justify-center gap-4">
+                <Link
+                  href={`/trips/${tripId}/itinerary`}
+                  className="inline-flex items-center px-6 py-3 rounded-md border border-ink/20 text-ink hover:bg-parchment-sunken transition-colors"
+                >
+                  Edit Itinerary
                 </Link>
-                <Button
-                  variant="outline"
-                  className="px-6 py-3 bg-transparent"
+                <button
                   onClick={openOptimizeModal}
                   disabled={itinerary.length < 2}
+                  className="inline-flex items-center px-6 py-3 rounded-md border border-ink/20 text-ink hover:bg-parchment-sunken transition-colors disabled:opacity-40"
                 >
-                  🧭 Optimize Route
-                </Button>
-                <Button className="px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700">
+                  <Compass className="w-4 h-4 mr-2" />
+                  Optimize Route
+                </button>
+                <button
+                  onClick={shareTrip}
+                  className="inline-flex items-center px-6 py-3 rounded-md bg-brass text-white hover:bg-brass-light transition-colors"
+                >
+                  <Share2 className="w-4 h-4 mr-2" />
                   Share Trip
-                </Button>
+                </button>
               </div>
 
               {/* Optimize Route Modal */}
               {showOptimizeModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                  <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-                    <h2 className="text-xl font-bold text-gray-900 mb-4">Route Optimization</h2>
+                <div className="fixed inset-0 bg-ink/60 flex items-center justify-center z-50 p-4">
+                  <div className="bg-parchment-raised rounded-md shadow-2xl max-w-md w-full p-6">
+                    <h2 className="text-xl font-display italic text-ink mb-4">Route Optimization</h2>
 
                     {isOptimizing ? (
                       <div className="flex flex-col items-center py-8">
-                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600 mb-4"></div>
-                        <p className="text-gray-600 text-sm">Analyzing your route...</p>
+                        <LogoLoader size={72} />
                       </div>
                     ) : optimizationResult?.error ? (
-                      <p className="text-red-600 text-sm mb-4">{optimizationResult.error}</p>
+                      <p className="text-route text-sm mb-4">{optimizationResult.error}</p>
                     ) : optimizationResult ? (
-                      <div className="space-y-3 mb-6">
-                        <div className="flex justify-between text-sm bg-gray-50 rounded-lg px-3 py-2">
-                          <span className="text-gray-600">Distance saved</span>
-                          <span className="font-semibold text-gray-900">{optimizationResult.distanceSaved?.toFixed(1)} km</span>
+                      <div className="space-y-3 mb-6 font-data">
+                        <div className="flex justify-between text-sm bg-parchment-sunken rounded-md px-3 py-2">
+                          <span className="text-ink/60">Distance saved</span>
+                          <span className="font-semibold text-ink tabular-nums">{optimizationResult.distanceSaved?.toFixed(1)} km</span>
                         </div>
-                        <div className="flex justify-between text-sm bg-gray-50 rounded-lg px-3 py-2">
-                          <span className="text-gray-600">Estimated savings</span>
-                          <span className="font-semibold text-green-600">${optimizationResult.moneySaved?.toFixed(2)}</span>
+                        <div className="flex justify-between text-sm bg-parchment-sunken rounded-md px-3 py-2">
+                          <span className="text-ink/60">Estimated savings</span>
+                          <span className="font-semibold text-brass tabular-nums">${optimizationResult.moneySaved?.toFixed(2)}</span>
                         </div>
-                        <div className="flex justify-between text-sm bg-gray-50 rounded-lg px-3 py-2">
-                          <span className="text-gray-600">CO₂ reduced</span>
-                          <span className="font-semibold text-gray-900">{optimizationResult.co2Saved?.toFixed(1)} kg</span>
+                        <div className="flex justify-between text-sm bg-parchment-sunken rounded-md px-3 py-2">
+                          <span className="text-ink/60">CO₂ reduced</span>
+                          <span className="font-semibold text-ink tabular-nums">{optimizationResult.co2Saved?.toFixed(1)} kg</span>
                         </div>
                       </div>
                     ) : null}
@@ -1066,14 +903,14 @@ export default function ItineraryViewPage() {
                     <div className="flex justify-end space-x-3">
                       <button
                         onClick={closeOptimizeModal}
-                        className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        className="px-4 py-2 text-ink bg-parchment-raised border border-ink/15 rounded-md hover:bg-parchment transition-colors"
                       >
                         {isOptimized ? "Close" : "Cancel"}
                       </button>
                       {!isOptimizing && optimizationResult?.optimizedItinerary && !isOptimized && (
                         <button
                           onClick={applyOptimization}
-                          className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                          className="px-4 py-2 bg-brass text-white rounded-md hover:bg-brass-light transition-colors"
                         >
                           Apply
                         </button>
@@ -1086,114 +923,56 @@ export default function ItineraryViewPage() {
           )}
         </div>
 
-        <div>
-          <div>
-            {/* Weather & AI Suggestions */}
-            <h2 className="text-xl font-semibold mt-32">Weather-Based Packing & Activity Suggestions</h2>
-            <WeatherSuggestions tripId={tripId} />
+        {/* Sidebar */}
+        <div className="space-y-6">
+          {/* Enhanced Summary Stats */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-parchment-raised rounded-md p-5 shadow-sm border border-ink/10">
+              <div className="w-10 h-10 rounded-md bg-blue-100 text-blue-600 flex items-center justify-center mb-3">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div className="text-2xl font-semibold text-ink font-data tabular-nums">{itinerary.length}</div>
+              <div className="text-sm text-ink/50">Activities</div>
+            </div>
+
+            <div className="bg-parchment-raised rounded-md p-5 shadow-sm border border-ink/10">
+              <div className="w-10 h-10 rounded-md bg-green-100 text-green-600 flex items-center justify-center mb-3">
+                <MapPin className="w-5 h-5" />
+              </div>
+              <div className="text-2xl font-semibold text-ink font-data tabular-nums">{trip?.destinations?.length || 0}</div>
+              <div className="text-sm text-ink/50">Destinations</div>
+            </div>
+
+            <div className="bg-parchment-raised rounded-md p-5 shadow-sm border border-ink/10">
+              <div className="w-10 h-10 rounded-md bg-purple-100 text-purple-600 flex items-center justify-center mb-3">
+                <CalendarDays className="w-5 h-5" />
+              </div>
+              <div className="text-2xl font-semibold text-ink font-data tabular-nums">
+                {trip?.startDate && trip?.endDate
+                  ? Math.ceil((new Date(trip.endDate) - new Date(trip.startDate)) / (1000 * 60 * 60 * 24))
+                  : 0}
+              </div>
+              <div className="text-sm text-ink/50">Days</div>
+            </div>
+
+            <div className="bg-parchment-raised rounded-md p-5 shadow-sm border border-ink/10">
+              <div className="w-10 h-10 rounded-md bg-brass/10 text-brass flex items-center justify-center mb-3">
+                <Star className="w-5 h-5" />
+              </div>
+              <div className="text-xl font-semibold text-ink font-data tabular-nums">
+                {trip?.currency} {totalBudget.toFixed(0)}
+              </div>
+              <div className="text-sm text-ink/50">Total Budget</div>
+            </div>
           </div>
 
-          <div>
-            {/* Enhanced Summary Stats */}
-
-              <div className="mt-24 grid grid-cols-2 gap-2">
-                <div>
-                  <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
-                    <div className="flex items-center justify-between">
-                      
-                      <div>
-                        <div className="text-3xl font-bold">{itinerary.length}</div>
-                        <div className="text-sm opacity-90">Activities</div>
-                      </div>
-                      
-                      <div className="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M13 10V3L4 14h7v7l9-11h-7z"
-                          />
-                        </svg>
-                      </div>
-                      
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-3xl font-bold">{trip?.destinations?.length || 0}</div>
-                      <div className="text-sm opacity-90">Destinations</div>
-                    </div>
-                    <div className="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-3xl font-bold">
-                        {Math.ceil((new Date(trip?.endDate) - new Date(trip?.startDate)) / (1000 * 60 * 60 * 24))}
-                      </div>
-                      <div className="text-sm opacity-90">Days</div>
-                    </div>
-                    <div className="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl p-6 text-white shadow-lg">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-2xl font-bold">
-                        {trip?.currency} {totalBudget.toFixed(0)}
-                      </div>
-                      <div className="text-sm opacity-90">Total Budget</div>
-                    </div>
-                    <div className="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
+          {/* Weather & AI Suggestions */}
+          <div className="bg-parchment-raised rounded-md p-5 shadow-sm border border-ink/10">
+            <h2 className="text-lg font-display italic text-ink mb-4">Weather-Based Packing &amp; Activity Suggestions</h2>
+            <WeatherSuggestions tripId={tripId} />
           </div>
         </div>
       </div>
     </div>
   )
 }
-
-
