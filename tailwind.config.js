@@ -10,31 +10,37 @@ module.exports = {
   theme: {
   	extend: {
   		colors: {
+  			// Waypoint brand accent — brass. Kept under the "primary" key so
+  			// every existing bg-primary-*/text-primary-*/border-primary-* utility
+  			// across the app now resolves to the new system without per-page edits.
   			primary: {
-  				'50': '#eff6ff',
-  				'100': '#dbeafe',
-  				'200': '#bfdbfe',
-  				'300': '#93c5fd',
-  				'400': '#60a5fa',
-  				'500': '#3b82f6',
-  				'600': '#2563eb',
-  				'700': '#1d4ed8',
-  				'800': '#1e40af',
-  				'900': '#1e3a8a',
+  				'50': '#faf6ec',
+  				'100': '#f3ead1',
+  				'200': '#e6d3a3',
+  				'300': '#d6b871',
+  				'400': '#c49c4a',
+  				'500': '#ac812f',
+  				'600': '#96691e',
+  				'700': '#7a5419',
+  				'800': '#614314',
+  				'900': '#4d3510',
   				DEFAULT: 'hsl(var(--primary))',
   				foreground: 'hsl(var(--primary-foreground))'
   			},
+  			// Waypoint neutrals — ink-tinted rather than pure grey, so every
+  			// bg-gray-50/text-gray-900/border-gray-* utility inherits the chart
+  			// paper + ink hue instead of a generic SaaS grey.
   			gray: {
-  				'50': '#f9fafb',
-  				'100': '#f3f4f6',
-  				'200': '#e5e7eb',
-  				'300': '#d1d5db',
-  				'400': '#9ca3af',
-  				'500': '#6b7280',
-  				'600': '#4b5563',
-  				'700': '#374151',
-  				'800': '#1f2937',
-  				'900': '#111827'
+  				'50': '#f5f7f6',
+  				'100': '#e9edeb',
+  				'200': '#d2dbd8',
+  				'300': '#b3c2bd',
+  				'400': '#8a9d98',
+  				'500': '#687e79',
+  				'600': '#4f625d',
+  				'700': '#3b4a46',
+  				'800': '#28332f',
+  				'900': '#142523'
   			},
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
@@ -71,18 +77,42 @@ module.exports = {
   				'3': 'hsl(var(--chart-3))',
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
-  			}
+  			},
+  			// "Waypoint" direction tokens — opt-in via these utilities on pages
+  			// migrating to the new visual system. See app/dashboard/page.jsx and
+  			// app/trips/[id]/itinerary/view/page.jsx for the first rollout.
+  			parchment: {
+  				DEFAULT: '#eef2f0',
+  				raised: '#ffffff',
+  				sunken: '#e3e9e5'
+  			},
+  			ink: '#142523',
+  			brass: {
+  				DEFAULT: '#96691e',
+  				light: '#d9a856'
+  			},
+  			route: '#a8402f'
   		},
   		fontFamily: {
   			sans: [
   				'Inter',
   				'system-ui',
   				'sans-serif'
+  			],
+  			display: [
+  				'var(--font-display)',
+  				'Georgia',
+  				'serif'
+  			],
+  			data: [
+  				'var(--font-data)',
+  				'ui-monospace',
+  				'monospace'
   			]
   		},
   		borderRadius: {
-  			xl: '1rem',
-  			'2xl': '1.5rem',
+  			xl: '0.5rem',
+  			'2xl': '0.625rem',
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
   			sm: 'calc(var(--radius) - 4px)'

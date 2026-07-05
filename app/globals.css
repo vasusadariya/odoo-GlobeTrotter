@@ -488,3 +488,15 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Waypoint direction: editorial serif for headings app-wide. Weight/size
+   still come from each element's own Tailwind classes — this only sets the
+   typeface + italic treatment, so existing text-3xl/font-bold etc keep working. */
+@layer base {
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display), Georgia, serif;
+    font-style: italic;
+  }
+}
