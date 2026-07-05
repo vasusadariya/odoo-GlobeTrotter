@@ -1,8 +1,10 @@
-import authMiddleware from 'next-auth/middleware';
+import { withAuth } from 'next-auth/middleware';
 
-export default function proxy(...args) {
-  return authMiddleware(...args);
-}
+export default withAuth({
+  pages: {
+    signIn: '/auth/login',
+  },
+});
 
 export const config = {
   matcher: ['/dashboard/:path*', '/trips/:path*', '/profile/:path*']

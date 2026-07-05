@@ -32,7 +32,7 @@ export default function SettingsPage() {
   // Redirect if not authenticated
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.replace("/auth/login")
+      router.replace("/auth/login?callbackUrl=/settings")
     }
   }, [status, router])
 

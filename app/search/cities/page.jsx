@@ -104,9 +104,10 @@ export default function CitySearchPage() {
   // Authentication check
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/auth/login")
+      const callbackUrl = encodeURIComponent(`/search/cities?${searchParams.toString()}`)
+      router.push(`/auth/login?callbackUrl=${callbackUrl}`)
     }
-  }, [status, router])
+  }, [status, router, searchParams])
 
   const addCityToTrip = async (city) => {
     if (!tripId) return

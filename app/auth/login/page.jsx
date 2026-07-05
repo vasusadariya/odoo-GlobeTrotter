@@ -1,17 +1,27 @@
 "use client"
 
-import { useState } from "react"
+import { Suspense, useState } from "react"
 import { signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useForm } from "react-hook-form"
 import Link from "next/link"
 import Button from "../../../components/ui/Button_1"
 import Input from "../../../components/ui/Input_1"
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  )
+}
+
+function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard"
 
   const {
     register,
@@ -33,7 +43,7 @@ export default function LoginPage() {
       if (result?.error) {
         setError("Invalid email or password")
       } else {
-        router.replace("/dashboard")
+        router.replace(callbackUrl)
       }
     } catch (error) {
       setError("An error occurred. Please try again.")
@@ -44,7 +54,7 @@ export default function LoginPage() {
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true)
-    await signIn("google")
+    await signIn("google", { callbackUrl })
   }
 
   return (
