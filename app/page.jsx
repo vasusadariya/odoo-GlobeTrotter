@@ -190,9 +190,9 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-parchment">
       {/* Hero Section — built from the Waypoint system itself, not a stock photo */}
-      <div className="relative h-screen w-full overflow-hidden px-4 sm:px-6 lg:px-8 pt-8 pb-12">
-        {/* Ink/brass chart backdrop with the rotating globe as the visual anchor */}
-        <div className="absolute inset-0 w-full h-full rounded-2xl overflow-hidden mt-2 mx-auto max-w-6xl shadow-3xl bg-gradient-to-br from-ink via-ink to-[#241a10]">
+      <div className="relative h-screen w-full overflow-hidden">
+        {/* Ink/brass chart backdrop with the rotating globe as the visual anchor — full-bleed, edge to edge */}
+        <div className="absolute inset-0 w-full h-full overflow-hidden bg-gradient-to-br from-ink via-ink to-[#241a10]">
           {/* Faint topographic chart texture */}
           <div
             className="absolute inset-0 opacity-[0.12]"
