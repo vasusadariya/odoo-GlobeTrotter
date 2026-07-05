@@ -202,12 +202,15 @@ export default function HomePage() {
               backgroundSize: "140px 140px",
             }}
           />
-          {/* Ambient globe, bleeding off the right edge */}
-          <div className="absolute -right-32 top-1/2 hidden -translate-y-1/2 md:block lg:-right-16">
-            <Globe markers={SHOWCASE_MARKERS} size={640} />
+          {/* Globe, anchored to the right side with a soft glow behind it */}
+          <div className="absolute right-6 top-1/2 hidden -translate-y-1/2 md:block lg:right-16">
+            <div className="relative flex items-center justify-center">
+              <div className="absolute h-[380px] w-[380px] rounded-full bg-brass/20 blur-3xl" />
+              <Globe markers={SHOWCASE_MARKERS} size={420} className="relative" />
+            </div>
           </div>
           {/* Ink vignette so text stays legible over the globe/texture */}
-          <div className="absolute inset-0 bg-gradient-to-r from-ink via-ink/60 to-transparent md:via-ink/50 md:to-ink/5" />
+          <div className="absolute inset-0 bg-gradient-to-r from-ink via-ink/55 to-transparent md:via-ink/35 md:to-ink/10" />
         </div>
 
         {/* Hero content with adjusted margins */}
