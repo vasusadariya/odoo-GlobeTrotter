@@ -253,7 +253,7 @@ export default function CitySearchPage() {
                           loading="lazy"
                         />
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                        <div className="w-full h-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
                           <svg
                             className="w-12 h-12 text-gray-400"
                             fill="none"

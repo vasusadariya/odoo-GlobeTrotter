@@ -108,7 +108,7 @@ export default function TripsListPage() {
                 className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
               >
                 {trip.coverImage && (
-                  <div className="h-48 bg-gradient-to-r from-blue-500 to-purple-600">
+                  <div className="h-48 bg-gradient-to-r from-primary-500 to-primary-700">
                     <img
                       src={trip.coverImage || "/placeholder.svg"}
                       alt={trip.name}
