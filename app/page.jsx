@@ -2,7 +2,6 @@
 
 import Link from "next/link"
 import { useState, useEffect, useCallback } from "react"
-import Image from "next/image"
 import TopRegionalCities from "../components/TopRegionalCities"
 import { motion } from "framer-motion"
 import { Compass, X, Search, Waypoints, Wallet, Users, MapPinned, CalendarClock } from "lucide-react"
@@ -190,37 +189,42 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-parchment">
-      {/* Hero Section with Image and Curved Borders */}
+      {/* Hero Section — built from the Waypoint system itself, not a stock photo */}
       <div className="relative h-screen w-full overflow-hidden px-4 sm:px-6 lg:px-8 pt-8 pb-12">
-        {/* Image Background with overlay - curved borders */}
-        <div className="absolute inset-0 w-full h-full rounded-2xl overflow-hidden mt-2 mx-auto max-w-6xl shadow-3xl">
-          <Image
-            src="/hero-travel.jpg"
-            alt="Travel Landscape"
-            fill
-            priority
-            className="object-cover"
+        {/* Ink/brass chart backdrop with the rotating globe as the visual anchor */}
+        <div className="absolute inset-0 w-full h-full rounded-2xl overflow-hidden mt-2 mx-auto max-w-6xl shadow-3xl bg-gradient-to-br from-ink via-ink to-[#241a10]">
+          {/* Faint topographic chart texture */}
+          <div
+            className="absolute inset-0 opacity-[0.12]"
+            style={{
+              backgroundImage:
+                "repeating-radial-gradient(circle at 0 0, transparent 0, transparent 68px, rgba(217,168,86,0.5) 69px, transparent 70px)",
+              backgroundSize: "140px 140px",
+            }}
           />
-          {/* Gradient overlay to enhance text visibility */}
-          <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/30 to-transparent"></div>
+          {/* Ambient globe, bleeding off the right edge */}
+          <div className="absolute -right-32 top-1/2 hidden -translate-y-1/2 md:block lg:-right-16">
+            <Globe markers={SHOWCASE_MARKERS} size={640} />
+          </div>
+          {/* Ink vignette so text stays legible over the globe/texture */}
+          <div className="absolute inset-0 bg-gradient-to-r from-ink via-ink/60 to-transparent md:via-ink/50 md:to-ink/5" />
         </div>
 
         {/* Hero content with adjusted margins */}
         <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 h-full flex flex-col justify-center">
-          <div className="text-center text-white my-8">
-            <p className="flex items-center justify-center gap-2 mb-6 font-data text-xs uppercase tracking-widest text-brass-light">
+          <div className="text-left text-white my-8 max-w-2xl">
+            <p className="flex items-center gap-2 mb-6 font-data text-xs uppercase tracking-widest text-brass-light">
               <span className="h-px w-7 bg-brass-light" />
               GlobeTrotter
-              <span className="h-px w-7 bg-brass-light" />
             </p>
             <h1 className="font-display italic text-5xl md:text-7xl mb-8 drop-shadow-xl">
               Pack your bags, let&apos;s go<br />
               somewhere amazing
             </h1>
-            <p className="text-xl text-white/90 mb-10 max-w-3xl mx-auto drop-shadow-lg">
+            <p className="text-xl text-white/90 mb-10 max-w-xl drop-shadow-lg">
               Hidden gems, breathtaking views, unforgettable adventures—where will you go next?
             </p>
-            <div className="flex justify-center mt-4">
+            <div className="flex mt-4">
               <Link href="/dashboard">
                 <motion.button
                   initial={{ opacity: 0, y: 20 }}
