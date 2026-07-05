@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { User, MapPin, Bell, Shield } from "lucide-react"
+import toast from "react-hot-toast"
 
 export default function SettingsPage() {
   const { data: session, status } = useSession()
@@ -109,6 +110,18 @@ export default function SettingsPage() {
     }))
   }
 
+  // Currency/language are top-level string fields on preferences, not nested
+  // objects like notifications/privacy, so they need their own setter.
+  const handleTopLevelPreferenceChange = (field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      preferences: {
+        ...prev.preferences,
+        [field]: value,
+      },
+    }))
+  }
+
   const handleSave = async () => {
     setSaving(true)
     try {
@@ -127,13 +140,13 @@ export default function SettingsPage() {
       if (response.ok) {
         const data = await response.json()
         setUserData(data.user)
-        alert("Settings saved successfully!")
+        toast.success("Settings saved successfully!")
       } else {
-        alert("Error saving settings")
+        toast.error("Error saving settings")
       }
     } catch (error) {
       console.error("Error saving settings:", error)
-      alert("Error saving settings")
+      toast.error("Error saving settings")
     } finally {
       setSaving(false)
     }
@@ -142,7 +155,7 @@ export default function SettingsPage() {
   if (status === "loading" || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
       </div>
     )
   }
@@ -153,11 +166,11 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
+            <div className="w-16 h-16 bg-primary-600 rounded-full flex items-center justify-center">
               <User className="w-8 h-8 text-white" />
             </div>
             <div>
@@ -173,7 +186,7 @@ export default function SettingsPage() {
             {/* Basic Information */}
             <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex items-center space-x-2 mb-4">
-                <User className="w-5 h-5 text-blue-600" />
+                <User className="w-5 h-5 text-primary-600" />
                 <h2 className="text-lg font-semibold text-gray-900">Basic Information</h2>
               </div>
 
@@ -184,7 +197,7 @@ export default function SettingsPage() {
                     type="text"
                     value={formData.name}
                     onChange={(e) => handleInputChange("name", e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                     placeholder="Enter your full name"
                   />
                 </div>
@@ -195,7 +208,7 @@ export default function SettingsPage() {
                     type="email"
                     value={formData.email}
                     onChange={(e) => handleInputChange("email", e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                     placeholder="Enter your email address"
                   />
                 </div>
@@ -205,7 +218,7 @@ export default function SettingsPage() {
             {/* Preferences */}
             <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex items-center space-x-2 mb-4">
-                <User className="w-5 h-5 text-blue-600" />
+                <User className="w-5 h-5 text-primary-600" />
                 <h2 className="text-lg font-semibold text-gray-900">Preferences</h2>
               </div>
 
@@ -214,8 +227,8 @@ export default function SettingsPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
                   <select
                     value={formData.preferences.currency}
-                    onChange={(e) => handlePreferenceChange("", "currency", e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={(e) => handleTopLevelPreferenceChange("currency", e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
                     <option value="USD">USD - US Dollar</option>
                     <option value="EUR">EUR - Euro</option>
@@ -229,8 +242,8 @@ export default function SettingsPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Language</label>
                   <select
                     value={formData.preferences.language}
-                    onChange={(e) => handlePreferenceChange("", "language", e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={(e) => handleTopLevelPreferenceChange("language", e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
                     <option value="en">English</option>
                     <option value="es">Spanish</option>
@@ -245,7 +258,7 @@ export default function SettingsPage() {
             {/* Notifications */}
             <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex items-center space-x-2 mb-4">
-                <Bell className="w-5 h-5 text-blue-600" />
+                <Bell className="w-5 h-5 text-primary-600" />
                 <h2 className="text-lg font-semibold text-gray-900">Notifications</h2>
               </div>
 
@@ -259,7 +272,7 @@ export default function SettingsPage() {
                     type="checkbox"
                     checked={formData.preferences.notifications?.email || false}
                     onChange={(e) => handlePreferenceChange("notifications", "email", e.target.checked)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                   />
                 </div>
 
@@ -272,7 +285,7 @@ export default function SettingsPage() {
                     type="checkbox"
                     checked={formData.preferences.notifications?.push || false}
                     onChange={(e) => handlePreferenceChange("notifications", "push", e.target.checked)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                   />
                 </div>
 
@@ -285,7 +298,7 @@ export default function SettingsPage() {
                     type="checkbox"
                     checked={formData.preferences.notifications?.marketing || false}
                     onChange={(e) => handlePreferenceChange("notifications", "marketing", e.target.checked)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                   />
                 </div>
               </div>
@@ -294,7 +307,7 @@ export default function SettingsPage() {
             {/* Privacy */}
             <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex items-center space-x-2 mb-4">
-                <Shield className="w-5 h-5 text-blue-600" />
+                <Shield className="w-5 h-5 text-primary-600" />
                 <h2 className="text-lg font-semibold text-gray-900">Privacy</h2>
               </div>
 
@@ -308,7 +321,7 @@ export default function SettingsPage() {
                     type="checkbox"
                     checked={formData.preferences.privacy?.profileVisible || false}
                     onChange={(e) => handlePreferenceChange("privacy", "profileVisible", e.target.checked)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                   />
                 </div>
 
@@ -321,7 +334,7 @@ export default function SettingsPage() {
                     type="checkbox"
                     checked={formData.preferences.privacy?.tripsVisible || false}
                     onChange={(e) => handlePreferenceChange("privacy", "tripsVisible", e.target.checked)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                   />
                 </div>
               </div>
@@ -353,7 +366,7 @@ export default function SettingsPage() {
             {userData?.location && (
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <div className="flex items-center space-x-2 mb-3">
-                  <MapPin className="w-5 h-5 text-blue-600" />
+                  <MapPin className="w-5 h-5 text-primary-600" />
                   <h3 className="text-lg font-semibold text-gray-900">Current Location</h3>
                 </div>
                 <p className="text-sm text-gray-600">
@@ -367,7 +380,7 @@ export default function SettingsPage() {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-md font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-primary-600 text-white py-3 px-4 rounded-md font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? "Saving..." : "Save Changes"}
             </button>
