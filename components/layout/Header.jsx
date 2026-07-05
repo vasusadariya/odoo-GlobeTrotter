@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useSession, signOut } from "next-auth/react"
 import { useState, useEffect, useRef } from "react"
-import { MapPin, ChevronDown, User, Settings, LogOut } from "lucide-react"
+import { MapPin, ChevronDown, User, Settings, LogOut, Compass } from "lucide-react"
 import { motion, useScroll, useMotionValueEvent } from "framer-motion"
 
 // Utility function to conditionally join classNames
@@ -209,16 +209,10 @@ export default function Header() {
       >
         {/* Logo */}
         <Link href="/" className="relative z-20 flex items-center space-x-2 px-2 py-1">
-          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M10 18a8 8 0 100-16 8 8 0 000 16zM4.332 8.027a6.012 6.012 0 011.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 019 7.5V8a2 2 0 004 0 2 2 0 011.523-1.943A5.977 5.977 0 0116 10c0 .34-.028.675-.083 1H15a2 2 0 00-2 2v2.197A5.973 5.973 0 0110 16v-2a2 2 0 00-2-2 2 2 0 01-2-2 2 2 0 00-1.668-1.973z"
-                clipRule="evenodd"
-              />
-            </svg>
+          <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center">
+            <Compass className="w-4 h-4 text-white" />
           </div>
-          <span className="text-xl font-bold text-black dark:text-white">GlobeTrotter</span>
+          <span className="text-xl font-display italic text-ink">GlobeTrotter</span>
         </Link>
 
         {/* Location and Auth */}
@@ -229,7 +223,7 @@ export default function Header() {
             className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none"
             title="Click to refresh your location"
           >
-            <MapPin className="w-4 h-4 mr-1 text-blue-600" />
+            <MapPin className="w-4 h-4 mr-1 text-primary-600" />
             {location.loading ? (
               <span className="animate-pulse">Locating...</span>
             ) : location.error ? (
@@ -253,7 +247,7 @@ export default function Header() {
                 onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
                 className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none"
               >
-                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center">
                   <User className="w-4 h-4 text-white" />
                 </div>
                 <span className="hidden md:block">{session.user.name}</span>
@@ -302,7 +296,7 @@ export default function Header() {
               <Link href="/auth/login">
                 <motion.button
                   whileHover={{ y: -2 }}
-                  className="px-4 py-2 rounded-md bg-transparent text-black text-sm font-medium hover:bg-gray-100 dark:text-white dark:hover:bg-neutral-800 transition-colors"
+                  className="px-4 py-2 rounded-md bg-transparent text-ink text-sm font-medium hover:bg-gray-100 transition-colors"
                 >
                   Sign In
                 </motion.button>
@@ -310,7 +304,7 @@ export default function Header() {
               <Link href="/auth/register">
                 <motion.button
                   whileHover={{ y: -2 }}
-                  className="px-4 py-2 rounded-md bg-black text-white text-sm font-medium shadow-[0_0_24px_rgba(34,_42,_53,_0.06)] hover:bg-gray-900 transition-colors"
+                  className="px-4 py-2 rounded-md bg-ink text-white text-sm font-medium shadow-[0_0_24px_rgba(34,_42,_53,_0.06)] hover:bg-primary-700 transition-colors"
                 >
                   Sign Up
                 </motion.button>
@@ -346,20 +340,14 @@ export default function Header() {
         <div className="flex w-full flex-row items-center justify-between px-4">
           {/* Logo for mobile */}
           <Link href="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM4.332 8.027a6.012 6.012 0 011.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 019 7.5V8a2 2 0 004 0 2 2 0 011.523-1.943A5.977 5.977 0 0116 10c0 .34-.028.675-.083 1H15a2 2 0 00-2 2v2.197A5.973 5.973 0 0110 16v-2a2 2 0 00-2-2 2 2 0 01-2-2 2 2 0 00-1.668-1.973z"
-                  clipRule="evenodd"
-                />
-              </svg>
+            <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center">
+              <Compass className="w-4 h-4 text-white" />
             </div>
-            <span className="text-xl font-bold text-black dark:text-white">GlobeTrotter</span>
+            <span className="text-xl font-display italic text-ink">GlobeTrotter</span>
           </Link>
 
           {/* Mobile menu toggle */}
-          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-black dark:text-white">
+          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-ink">
             {isMobileMenuOpen ? (
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -394,7 +382,7 @@ export default function Header() {
           >
             {/* Location */}
             <div className="w-full px-4 py-2 flex items-center">
-              <MapPin className="w-4 h-4 mr-2 text-blue-600" />
+              <MapPin className="w-4 h-4 mr-2 text-primary-600" />
               {location.loading ? (
                 <span className="animate-pulse">Locating...</span>
               ) : location.error ? (
@@ -407,7 +395,7 @@ export default function Header() {
               ) : (
                 <span>Get location</span>
               )}
-              <button onClick={handleLocationClick} className="ml-2 text-blue-600 text-sm">
+              <button onClick={handleLocationClick} className="ml-2 text-primary-600 text-sm">
                 Refresh
               </button>
             </div>
@@ -420,7 +408,7 @@ export default function Header() {
             ) : session ? (
               <div className="w-full px-4 py-2 space-y-2">
                 <div className="flex items-center space-x-2 mb-4">
-                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                  <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center">
                     <User className="w-4 h-4 text-white" />
                   </div>
                   <span className="font-medium">{session.user.name}</span>
@@ -455,12 +443,12 @@ export default function Header() {
             ) : (
               <div className="w-full px-4 py-2 flex flex-col gap-2">
                 <Link href="/auth/login" className="w-full">
-                  <button className="w-full px-4 py-2 border border-gray-300 text-black rounded-md text-sm font-medium">
+                  <button className="w-full px-4 py-2 border border-gray-300 text-ink rounded-md text-sm font-medium">
                     Sign In
                   </button>
                 </Link>
                 <Link href="/auth/register" className="w-full">
-                  <button className="w-full px-4 py-2 bg-black text-white rounded-md text-sm font-medium">
+                  <button className="w-full px-4 py-2 bg-ink text-white rounded-md text-sm font-medium">
                     Sign Up
                   </button>
                 </Link>
