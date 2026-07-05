@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { Suspense, useState, useEffect, useCallback } from "react"
 import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useForm } from "react-hook-form"
 import Link from "next/link"
 import Button from "../../../components/ui/Button_1"
@@ -40,9 +40,21 @@ function useDebounce(value, delay) {
 }
 
 export default function CreateTripPage() {
+  return (
+    <Suspense fallback={null}>
+      <CreateTripForm />
+    </Suspense>
+  )
+}
+
+function CreateTripForm() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const editTripId = searchParams.get("edit")
+  const isEditMode = Boolean(editTripId)
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingTrip, setIsLoadingTrip] = useState(isEditMode)
   const [error, setError] = useState("")
   const [selectedDestinations, setSelectedDestinations] = useState([])
   const [searchQuery, setSearchQuery] = useState("")
@@ -60,6 +72,7 @@ export default function CreateTripPage() {
     handleSubmit,
     formState: { errors },
     watch,
+    reset,
   } = useForm({
     defaultValues: {
       privacy: "private",
@@ -71,6 +84,55 @@ export default function CreateTripPage() {
 
   const watchedStartDate = watch("startDate")
   const watchedCurrency = watch("currency")
+
+  // Prefill the form when editing an existing trip
+  useEffect(() => {
+    if (!editTripId) return
+
+    const fetchTripForEdit = async () => {
+      try {
+        setIsLoadingTrip(true)
+        const response = await fetch(`/api/trips/${editTripId}`)
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to load trip")
+        }
+
+        const trip = data.trip
+        reset({
+          name: trip.name || "",
+          startDate: trip.startDate ? new Date(trip.startDate).toISOString().split("T")[0] : "",
+          endDate: trip.endDate ? new Date(trip.endDate).toISOString().split("T")[0] : "",
+          currency: trip.currency || "USD",
+          budgetLimit: trip.budgetLimit || 1000,
+          description: trip.description || "",
+          privacy: trip.privacy || "private",
+        })
+
+        setSelectedDestinations(
+          (trip.destinations || []).map((dest, index) => ({
+            id: dest.placeId || `${dest.name}-${index}`,
+            name: dest.name,
+            formatted_address: dest.country ? `${dest.name}, ${dest.country}` : dest.name,
+            coordinates: dest.coordinates,
+            placeId: dest.placeId,
+            activities: dest.activities || [],
+          })),
+        )
+
+        if (trip.coverImage) {
+          setCoverImagePreview(trip.coverImage)
+        }
+      } catch (error) {
+        setError(error.message)
+      } finally {
+        setIsLoadingTrip(false)
+      }
+    }
+
+    fetchTripForEdit()
+  }, [editTripId, reset])
 
   // Fetch recommended destinations based on user profile
   useEffect(() => {
@@ -150,7 +212,7 @@ export default function CreateTripPage() {
   }, [debouncedSearchQuery, searchPlaces])
 
   // Authentication checks
-  if (status === "loading") {
+  if (status === "loading" || isLoadingTrip) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -230,8 +292,8 @@ export default function CreateTripPage() {
         })),
       }
 
-      const response = await fetch("/api/trips", {
-        method: "POST",
+      const response = await fetch(isEditMode ? `/api/trips/${editTripId}` : "/api/trips", {
+        method: isEditMode ? "PUT" : "POST",
         headers: {
           "Content-Type": "application/json",
         },
@@ -241,10 +303,10 @@ export default function CreateTripPage() {
       const result = await response.json()
 
       if (!response.ok) {
-        throw new Error(result.error || "Failed to create trip")
+        throw new Error(result.error || `Failed to ${isEditMode ? "update" : "create"} trip`)
       }
 
-      router.replace(`/trips/${result.trip.id}`)
+      router.replace(`/trips/${isEditMode ? editTripId : result.trip.id}`)
     } catch (error) {
       setError(error.message)
     } finally {
@@ -263,9 +325,11 @@ export default function CreateTripPage() {
         )}
 
         <div className="bg-white rounded-2xl shadow-lg p-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Trip</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">{isEditMode ? "Edit Trip" : "Create Trip"}</h1>
           <p className="text-gray-600 mb-8">
-            Form to initiate a new trip by providing a name, travel dates, and a description
+            {isEditMode
+              ? "Update your trip's name, dates, budget, and destinations"
+              : "Form to initiate a new trip by providing a name, travel dates, and a description"}
           </p>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
@@ -569,13 +633,13 @@ export default function CreateTripPage() {
 
             {/* Save Button */}
             <div className="flex justify-end space-x-4">
-              <Link href="/dashboard">
+              <Link href={isEditMode ? `/trips/${editTripId}` : "/dashboard"}>
                 <Button type="button" variant="outline" disabled={isLoading}>
                   Cancel
                 </Button>
               </Link>
               <Button type="submit" loading={isLoading} disabled={isLoading}>
-                Save Trip
+                {isEditMode ? "Save Changes" : "Save Trip"}
               </Button>
             </div>
           </form>

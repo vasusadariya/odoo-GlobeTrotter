@@ -101,12 +101,12 @@ export default function TripDetailPage() {
     if (!trip) return
 
     try {
-      const shareUrl = `${window.location.origin}/public-trips/${trip.id}`
+      const shareUrl = `${window.location.origin}/trips/${params.id}`
       await navigator.clipboard.writeText(shareUrl)
-      alert("Trip link copied to clipboard!")
+      toast.success("Link copied — anyone with access to this trip can open it")
     } catch (error) {
       console.error("Error sharing trip:", error)
-      alert("Failed to copy link")
+      toast.error("Failed to copy link")
     }
   }
 
@@ -203,7 +203,7 @@ export default function TripDetailPage() {
         {/* Trip Header */}
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
           {trip.coverImage && (
-            <div className="h-64 bg-gradient-to-r from-blue-500 to-purple-600">
+            <div className="h-64 bg-gradient-to-r from-primary-500 to-primary-700">
               <img src={trip.coverImage || "/placeholder.svg"} alt={trip.name} className="w-full h-full object-cover" />
             </div>
           )}
@@ -327,7 +327,7 @@ export default function TripDetailPage() {
                 {showInviteModal && (
                   <InviteCollaboratorModal tripId={params.id} onClose={() => setShowInviteModal(false)} />
                 )}
-                <Link href={`/trips/${params.id}/edit`}>
+                <Link href={`/trips/create?edit=${params.id}`}>
                   <Button variant="outline" size="sm">
                     <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
@@ -454,7 +454,7 @@ export default function TripDetailPage() {
             </div>
 
             <div className="flex space-x-3">
-              <Link href={`/search/activities?destination=${trip.destinations?.[0]?.name}`}>
+              <Link href={`/trips/${params.id}/itinerary`}>
                 <Button variant="outline">Add Activities</Button>
               </Link>
               <Link href={`/trips/${params.id}/itinerary`}>
