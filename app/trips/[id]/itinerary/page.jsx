@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useParams } from "next/navigation"
 import Link from "next/link"
+import { Plane, Car } from "lucide-react"
 import Button from "../../../../components/ui/Button_1"
 
 // Debounce hook
@@ -472,6 +473,8 @@ export default function ItineraryBuilderPage() {
                         <button
                           onClick={() => moveSection(section.id, "up")}
                           disabled={index === 0}
+                          aria-label="Move section up"
+                          title="Move section up"
                           className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -481,6 +484,8 @@ export default function ItineraryBuilderPage() {
                         <button
                           onClick={() => moveSection(section.id, "down")}
                           disabled={index === sections.length - 1}
+                          aria-label="Move section down"
+                          title="Move section down"
                           className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -489,6 +494,8 @@ export default function ItineraryBuilderPage() {
                         </button>
                         <button
                           onClick={() => removeSection(section.id)}
+                          aria-label="Remove section"
+                          title="Remove section"
                           className="p-1 text-red-400 hover:text-red-600"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -795,10 +802,10 @@ export default function ItineraryBuilderPage() {
                 ) : routePreview && (routePreview.flightLegCount > 0 || routePreview.carLegCount > 0) ? (
                   <div className="text-sm text-gray-600 space-y-1">
                     {routePreview.flightLegCount > 0 && (
-                      <p>✈️ {routePreview.flightLegCount} flight leg{routePreview.flightLegCount === 1 ? "" : "s"} · {routePreview.totalFlightKm.toFixed(0)} km</p>
+                      <p className="flex items-center gap-1.5"><Plane className="w-3.5 h-3.5 text-primary-600" /> {routePreview.flightLegCount} flight leg{routePreview.flightLegCount === 1 ? "" : "s"} · {routePreview.totalFlightKm.toFixed(0)} km</p>
                     )}
                     {routePreview.carLegCount > 0 && (
-                      <p>🚗 {routePreview.carLegCount} drive leg{routePreview.carLegCount === 1 ? "" : "s"} · {routePreview.totalCarKm.toFixed(0)} km</p>
+                      <p className="flex items-center gap-1.5"><Car className="w-3.5 h-3.5 text-primary-600" /> {routePreview.carLegCount} drive leg{routePreview.carLegCount === 1 ? "" : "s"} · {routePreview.totalCarKm.toFixed(0)} km</p>
                     )}
                     <p className="text-xs text-gray-500 mt-2">Estimated CO₂: {routePreview.estimatedCO2Kg.toFixed(1)} kg</p>
                   </div>
