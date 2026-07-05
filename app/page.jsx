@@ -5,8 +5,45 @@ import { useState, useEffect, useCallback } from "react"
 import Image from "next/image"
 import TopRegionalCities from "../components/TopRegionalCities"
 import { motion } from "framer-motion"
-import { Plane, X, Search } from "lucide-react"
-import Footer from "../components/Footer"
+import { Compass, X, Search, Waypoints, Wallet, Users, MapPinned, CalendarClock } from "lucide-react"
+import Globe from "../components/waypoint/Globe"
+
+const SHOWCASE_MARKERS = [
+  { location: [48.8566, 2.3522] }, // Paris
+  { location: [35.6762, 139.6503] }, // Tokyo
+  { location: [-8.3405, 115.092] }, // Bali
+  { location: [40.7128, -74.006] }, // New York
+  { location: [-33.9249, 18.4241] }, // Cape Town
+  { location: [-13.1631, -72.545] }, // Machu Picchu
+]
+
+const FEATURES = [
+  {
+    icon: Waypoints,
+    title: "Multi-City Itineraries",
+    desc: "Easily add and manage multiple destinations with flexible durations, visualize your journey on interactive timelines, and organize each stop with precision.",
+  },
+  {
+    icon: Wallet,
+    title: "Smart Budget Planning",
+    desc: "Take control of your travel finances with automatic budget estimation, expense tracking, and cost-effective recommendations tailored to your preferences.",
+  },
+  {
+    icon: Users,
+    title: "Collaborative Sharing",
+    desc: "Share your detailed trip plans with friends and family, collaborate on group adventures, and discover inspiration from other travelers' journeys.",
+  },
+  {
+    icon: MapPinned,
+    title: "Destination Discovery",
+    desc: "Explore global destinations with personalized recommendations for attractions, activities, and hidden gems tailored to your interests.",
+  },
+  {
+    icon: CalendarClock,
+    title: "Interactive Timeline",
+    desc: "Visualize your entire journey with interactive timelines and calendars. Get a clear overview of your trip flow and adjust it with ease.",
+  },
+]
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -152,11 +189,11 @@ export default function HomePage() {
     sortOption !== "popular"
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-parchment">
       {/* Hero Section with Image and Curved Borders */}
       <div className="relative h-screen w-full overflow-hidden px-4 sm:px-6 lg:px-8 pt-8 pb-12">
         {/* Image Background with overlay - curved borders */}
-        <div className="absolute inset-0 w-full h-full rounded-3xl overflow-hidden mt-2 mx-auto max-w-6xl shadow-3xl">
+        <div className="absolute inset-0 w-full h-full rounded-2xl overflow-hidden mt-2 mx-auto max-w-6xl shadow-3xl">
           <Image
             src="/hero-travel.jpg"
             alt="Travel Landscape"
@@ -165,15 +202,20 @@ export default function HomePage() {
             className="object-cover"
           />
           {/* Gradient overlay to enhance text visibility */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/30 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/30 to-transparent"></div>
         </div>
 
         {/* Hero content with adjusted margins */}
         <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 h-full flex flex-col justify-center">
           <div className="text-center text-white my-8">
-            <h1 className="text-5xl md:text-7xl font-bold mb-8 drop-shadow-xl">
+            <p className="flex items-center justify-center gap-2 mb-6 font-data text-xs uppercase tracking-widest text-brass-light">
+              <span className="h-px w-7 bg-brass-light" />
+              GlobeTrotter
+              <span className="h-px w-7 bg-brass-light" />
+            </p>
+            <h1 className="font-display italic text-5xl md:text-7xl mb-8 drop-shadow-xl">
               Pack your bags, let&apos;s go<br />
-              <span className="text-white">somewhere amazing</span>
+              somewhere amazing
             </h1>
             <p className="text-xl text-white/90 mb-10 max-w-3xl mx-auto drop-shadow-lg">
               Hidden gems, breathtaking views, unforgettable adventures—where will you go next?
@@ -188,12 +230,12 @@ export default function HomePage() {
                   transition={{ duration: 0.1, delay: 0.1 }}
                   className="group relative inline-flex items-center mt-3 gap-1.5 sm:gap-2 overflow-hidden rounded-full border border-white px-4 py-2 sm:px-5 sm:py-3 md:px-6 md:py-3 text-xs sm:text-sm md:text-base font-medium text-white transition-transform"
                 >
-                  <span className="relative z-10 transition-colors duration-500 group-hover:text-black">
-                    Book Now
+                  <span className="relative z-10 transition-colors duration-500 group-hover:text-ink">
+                    Start Planning
                   </span>
                   <span className="relative z-10 flex items-center justify-center">
-                    <span className="flex h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 bg-black items-center justify-center rounded-full transition-colors duration-500 group-hover:border-black">
-                      <Plane className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 transition-transform duration-300 group-hover:translate-x-2" />
+                    <span className="flex h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 bg-ink items-center justify-center rounded-full transition-colors duration-500 group-hover:border-ink">
+                      <Compass className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 transition-transform duration-300 group-hover:rotate-45" />
                     </span>
                   </span>
                   <div className="absolute left-0 top-0 h-full w-full -translate-x-full transform bg-white transition-transform duration-500 group-hover:translate-x-0" />
@@ -205,7 +247,7 @@ export default function HomePage() {
       </div>
 
       {/* Search Section - Centered and Styled like TopRegionalCities */}
-      <div className="bg-white py-12 shadow-md">
+      <div className="bg-parchment-raised py-12 shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Discover Your Next Destination</h2>
@@ -315,82 +357,36 @@ export default function HomePage() {
       {/* Top Regional Cities - Using the component */}
       <TopRegionalCities />
       {/* World Map Feature Section */}
-      <div className="bg-white py-16">
+      <div className="bg-parchment-raised py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-bold text-gray-900 mb-3">Your World, Your Journey</h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              GlobeTrotter transforms how you plan travel with intelligent tools for multi-city journeys,
-              budget management, and seamless itinerary sharing. Make planning as exciting as the trip itself.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-10">
-            <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl p-6 shadow-sm">
-              <div className="w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m0 11V9m0 0L9 7" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Multi-City Itineraries</h3>
-              <p className="text-gray-600">
-                Easily add and manage multiple destinations with flexible durations, visualize your journey on interactive
-                timelines, and organize each stop with precision.
+          <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-10 items-center mb-14">
+            <div>
+              <p className="mb-3 flex items-center gap-2 font-data text-xs uppercase tracking-widest text-primary-600">
+                <span className="h-px w-7 bg-primary-600" />
+                Waypoint
+              </p>
+              <h2 className="text-3xl md:text-4xl text-gray-900 mb-3">Your World, Your Journey</h2>
+              <p className="text-lg text-gray-600 max-w-xl">
+                GlobeTrotter transforms how you plan travel with intelligent tools for multi-city journeys,
+                budget management, and seamless itinerary sharing. Make planning as exciting as the trip itself.
               </p>
             </div>
-
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 shadow-sm">
-              <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Smart Budget Planning</h3>
-              <p className="text-gray-600">
-                Take control of your travel finances with automatic budget estimation, expense tracking, and
-                cost-effective recommendations tailored to your preferences.
-              </p>
-            </div>
-
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 shadow-sm">
-              <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Collaborative Sharing</h3>
-              <p className="text-gray-600">
-                Share your detailed trip plans with friends and family, collaborate on group adventures, and
-                discover inspiration from other travelers&apos; journeys.
-              </p>
+            <div className="flex flex-col items-center gap-2">
+              <Globe markers={SHOWCASE_MARKERS} size={260} />
+              <p className="font-data text-[0.7rem] tracking-wide text-gray-400">Trips planned on GlobeTrotter, worldwide</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
-            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 shadow-sm">
-              <div className="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {FEATURES.map((feature) => (
+              <div key={feature.title} className="rounded-xl border border-gray-200 bg-parchment p-6 shadow-sm">
+                <div className="w-12 h-12 bg-primary-600/10 rounded-lg flex items-center justify-center mb-4">
+                  <feature.icon className="w-6 h-6 text-primary-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">{feature.title}</h3>
+                <p className="text-gray-600">{feature.desc}</p>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Destination Discovery</h3>
-              <p className="text-gray-600">
-                Explore global destinations with personalized recommendations for attractions, activities, and hidden gems.
-                Find the perfect experiences based on your interests and travel style.
-              </p>
-            </div>
-
-            <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-6 shadow-sm">
-              <div className="w-12 h-12 bg-amber-600 rounded-xl flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Interactive Timeline</h3>
-              <p className="text-gray-600">
-                Visualize your entire journey with interactive timelines and calendars. Get a clear overview of your trip flow and
-                make adjustments with simple drag-and-drop interfaces.
-              </p>
-            </div>
+            ))}
           </div>
 
           <div className="mt-12 text-center">
@@ -398,7 +394,7 @@ export default function HomePage() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="px-8 py-4 bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-full shadow-md hover:shadow-lg text-lg font-medium transition-all duration-200"
+                className="px-8 py-4 bg-primary-600 hover:bg-primary-700 text-white rounded-full shadow-md hover:shadow-lg text-lg font-medium transition-all duration-200"
               >
                 Start Planning Your Journey
               </motion.button>
@@ -406,9 +402,6 @@ export default function HomePage() {
           </div>
         </div>
       </div>
-
-      {/* Footer - Using the new component */}
-      <Footer />
     </div>
   )
 }
