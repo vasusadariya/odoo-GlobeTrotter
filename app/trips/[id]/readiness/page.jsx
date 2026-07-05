@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
+import { Luggage } from "lucide-react"
 import Button from "../../../../components/ui/Button_1"
 
 export default function TripReadinessPage() {
@@ -74,7 +75,7 @@ export default function TripReadinessPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <Link href={`/trips/${params.id}`} className="text-sm text-primary-600 hover:text-primary-800">
             ← Back to Trip
@@ -84,7 +85,7 @@ export default function TripReadinessPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
+          <div className="bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl p-6 text-white shadow-lg">
             <div className="text-3xl font-bold">
               {readiness.daysUntilDeparture >= 0 ? readiness.daysUntilDeparture : "Started"}
             </div>
@@ -101,7 +102,7 @@ export default function TripReadinessPage() {
             <div className="text-sm opacity-90">Unresolved weather conflicts</div>
           </div>
 
-          <div className="bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl p-6 text-white shadow-lg">
+          <div className="bg-gradient-to-br from-primary-400 to-primary-600 rounded-xl p-6 text-white shadow-lg">
             <div className="text-2xl font-bold">
               {readiness.budgetStatus.currency} {readiness.budgetStatus.actual.toFixed(0)}
             </div>
@@ -132,7 +133,7 @@ export default function TripReadinessPage() {
             <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {readiness.packingList.map((item, index) => (
                 <li key={index} className="flex items-center text-sm text-gray-700 bg-gray-50 rounded-lg px-3 py-2">
-                  <span className="mr-2">🧳</span>
+                  <Luggage className="w-4 h-4 mr-2 text-primary-600 flex-shrink-0" />
                   {item}
                 </li>
               ))}
